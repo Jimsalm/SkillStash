@@ -40,7 +40,7 @@ export const coursesData: Course[] = [
     discountedPrice: 18.99,
     group: 'development',
     subcategory: 'web-development',
-    udemyUrl: 'https://www.udemy.com/course/100-days-of-code/?couponCode=SKILLSTASH24', // Sample link
+    udemyUrl: 'https://www.udemy.com/course/complete-c-plus-programming-course-from-basic-to-expert/?couponCode=6306412EB72D5443C38C', // Sample link
   },
   {
     id: 'data-science-bootcamp',
