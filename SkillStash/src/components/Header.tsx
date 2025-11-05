@@ -84,7 +84,7 @@ const Header = () => {
                     key={item.name}
                     variant="ghost"
                     asChild
-                    onClick={() => setIsOpen(false)} // Close sheet on link click
+                    onClick={() => setIsOpen(false)}
                     className="justify-start"
                   >
                     <Link to={item.href}>{item.name}</Link>
