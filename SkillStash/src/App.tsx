@@ -5,6 +5,7 @@ import About from './pages/About';
 import CourseCategory from './pages/CourseCategory';
 import CourseDetails from './pages/CourseDetails';
 import CourseList from './pages/CourseList';
+import Footer from './components/Footer';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/course/:id" element={<CourseDetails />} />
         <Route path="*" element={<h1 className="text-center mt-8 text-2xl">404 - Page Not Found</h1>} />
       </Routes>
+      <Footer />
     </div>
   );
 }
