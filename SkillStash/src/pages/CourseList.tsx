@@ -43,7 +43,7 @@ const coursesData: Course[] = [
     software: ['Python', 'Django', 'Flask'],
     claimedCount: 22150,
     originalPrice: 89.99,
-    discountedPrice: 18.9,
+    discountedPrice: 18.99,
     group: 'development',
     subcategory: 'web-development',
   },
