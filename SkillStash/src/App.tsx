@@ -2,8 +2,9 @@ import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Home from './pages/Home';
 import About from './pages/About';
-import CourseCategory from './pages/CourseCategory'; // Import the new component
+import CourseCategory from './pages/CourseCategory';
 import CourseDetails from './pages/CourseDetails';
+import CourseList from './pages/CourseList';
 
 function App() {
   return (
@@ -11,6 +12,9 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
+
+        {/* This is the new route for a specific category list */}
+        <Route path="/courses/:group/:subcategory" element={<CourseList />} />
         
         {/* Add the new route for the Course Category page */}
         <Route path="/courses" element={<CourseCategory />} />
