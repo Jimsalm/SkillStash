@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu } from 'lucide-react'; // Hamburger menu icon
+import { Menu } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   Sheet,
@@ -10,7 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from './ui/sheet';
-import { cn } from '@/lib/utils'; // shadcn's utility for combining class names
+import { cn } from '@/lib/utils';
 
 const Header = () => {
   // State to control the mobile menu sheet
@@ -28,8 +28,8 @@ const Header = () => {
         {/* Logo / Brand Name */}
         <div className="mr-4 hidden md:flex">
           <Link to="/" className="mr-6 flex items-center space-x-2">
-            <span className="hidden font-bold sm:inline-block text-xl">
-              Udemy Deals
+            <span className="hidden font-bold sm:inline-block text-3xl">
+              SkillStash
             </span>
           </Link>
         </div>
@@ -38,7 +38,7 @@ const Header = () => {
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <Link to="/" className="mx-auto block w-fit md:hidden">
-              <span className="font-bold text-xl">Udemy Deals</span>
+              <span className="font-bold text-xl">SkillStash</span>
             </Link>
           </div>
           
