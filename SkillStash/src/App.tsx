@@ -1,31 +1,56 @@
 import { Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// --- Layouts ---
+import PublicLayout from './components/PublicLayout';
+import AdminLayout from '@/components/admin/AdminLayout';
+
+// --- Public Pages ---
 import Home from './pages/Home';
 import About from './pages/About';
 import CourseCategory from './pages/CourseCategory';
-import CourseDetails from './pages/CourseDetails';
 import CourseList from './pages/CourseList';
-import Footer from './components/Footer';
+import CourseDetails from './pages/CourseDetails';
+
+// --- Admin Pages ---
+import AdminLoginPage from './pages/admin/AdminLoginPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminCoursesPage from './pages/admin/AdminCoursesPage';
+import AddNewCoursePage from './pages/admin/AddNewCoursePage';
 
 function App() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Header />
-      <Routes>
-        <Route path="/" element={<Home />} />
+    // NO Header, Footer, or wrapper div here. The layouts handle everything.
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<PublicLayout />}>
+        <Route index element={<Home />} />
+        <Route path="courses/:group/:subcategory" element={<CourseList />} />
+        <Route path="courses" element={<CourseCategory />} />
+        <Route path="about" element={<About />} />
+        <Route path="course/:id" element={<CourseDetails />} />
+      </Route>
 
-        {/* This is the new route for a specific category list */}
-        <Route path="/courses/:group/:subcategory" element={<CourseList />} />
-        
-        {/* Add the new route for the Course Category page */}
-        <Route path="/courses" element={<CourseCategory />} />
+      {/* Admin Login */}
+      <Route path="/admin/login" element={<AdminLoginPage />} />
 
-        <Route path="/about" element={<About />} />
-        <Route path="/course/:id" element={<CourseDetails />} />
-        <Route path="*" element={<h1 className="text-center mt-8 text-2xl">404 - Page Not Found</h1>} />
-      </Routes>
-      <Footer />
-    </div>
+      {/* Protected Admin Routes */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="courses" element={<AdminCoursesPage />} />
+        <Route path="add-course" element={<AddNewCoursePage />} />
+      </Route>
+
+      {/* 404 Fallback */}
+      <Route path="*" element={<h1 className="text-center mt-8 text-2xl">404 - Page Not Found</h1>} />
+    </Routes>
   );
 }
 
