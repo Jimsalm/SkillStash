@@ -14,11 +14,13 @@ import {
   ToggleGroupItem,
 } from "@/components/ui/toggle-group";
 import { cn } from '@/lib/utils';
+import { useTheme } from '@/components/theme-provider';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   
   const location = useLocation();
+  const { setTheme, theme } = useTheme();
 
   const navItems = [
     { name: 'Home', href: '/' },
@@ -105,7 +107,7 @@ const Header = () => {
                 {/* Mobile Theme Toggle */}
                 <div className="mt-8 flex flex-col gap-4 border-t border-border/40 pt-6">
                   <div className="flex justify-center pt-4">
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
                       <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                       <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                       <span className="sr-only">Toggle theme</span>
@@ -117,7 +119,7 @@ const Header = () => {
           </div>
 
           <div className="hidden md:block">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
               <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               <span className="sr-only">Toggle theme</span>
