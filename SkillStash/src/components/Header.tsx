@@ -1,20 +1,24 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu } from 'lucide-react';
-import { Button } from './ui/button';
+import { useLocation, Link } from 'react-router-dom';
+import { Menu, BookMarked, Sun, Moon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from './ui/sheet';
+} from '@/components/ui/sheet';
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
 import { cn } from '@/lib/utils';
 
 const Header = () => {
-  // State to control the mobile menu sheet
   const [isOpen, setIsOpen] = useState(false);
+  
+  const location = useLocation();
 
   const navItems = [
     { name: 'Home', href: '/' },
@@ -23,76 +27,103 @@ const Header = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/100">
-      <nav className="container mx-auto flex h-14 max-w-screen-2xl items-center">
-        {/* Logo / Brand Name */}
-        <div className="mr-4 hidden md:flex">
-          <Link to="/" className="mr-6 flex items-center space-x-2">
-            <span className="hidden font-bold sm:inline-block text-3xl">
+    <header className="sticky top-0 z-50 w-full bg-background">
+      <nav className="container mx-auto flex h-16 max-w-screen-2xl items-center justify-between">
+        
+        <div className="flex items-center">
+          <Link to="/" className="flex items-center space-x-2">
+            <BookMarked className="h-6 w-6 text-primary" />
+            <span className="font-bold sm:inline-block text-lg">
               SkillStash
             </span>
           </Link>
         </div>
-        
-        {/* Mobile Logo - centered */}
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            <Link to="/" className="mx-auto block w-fit md:hidden">
-              <span className="font-bold text-xl">SkillStash</span>
-            </Link>
-          </div>
-          
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center">
+
+        <div className="hidden md:flex items-center me-20">
+          <ToggleGroup
+            type="single"
+            value={location.pathname} 
+            className="flex items-center space-x-1"
+          >
             {navItems.map((item) => (
-              <Button
+              <ToggleGroupItem
                 key={item.name}
-                variant="ghost"
+                value={item.href}
                 asChild
-                className="text-foreground/80"
               >
-                <Link
-                  to={item.href}
-                  className={cn(
-                    "transition-colors hover:text-foreground"
-                  )}
-                >
+                <Link to={item.href} className="text-sm font-medium">
                   {item.name}
                 </Link>
-              </Button>
+              </ToggleGroupItem>
             ))}
-          </nav>
+          </ToggleGroup>
+        </div>
 
-          {/* Mobile Navigation (Sheet) */}
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle Menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-              <SheetHeader>
-                <SheetTitle>Menu</SheetTitle>
-                <SheetDescription>
-                  Navigate through the site.
-                </SheetDescription>
-              </SheetHeader>
-              <nav className="flex flex-col gap-2 mt-6">
-                {navItems.map((item) => (
-                  <Button
-                    key={item.name}
-                    variant="ghost"
-                    asChild
-                    onClick={() => setIsOpen(false)}
-                    className="justify-start"
-                  >
-                    <Link to={item.href}>{item.name}</Link>
-                  </Button>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
+        <div className="flex items-center">
+        
+          <div className="md:hidden">
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle Menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px]">
+                <SheetHeader className="mb-4">
+                  <SheetTitle>
+                    <Link 
+                      to="/" 
+                      onClick={() => setIsOpen(false)} 
+                      className="flex items-center space-x-2"
+                    >
+                      <BookMarked className="h-6 w-6 text-primary" />
+                      <span className="font-bold text-lg">SkillStash</span>
+                    </Link>
+                  </SheetTitle>
+                </SheetHeader>
+                
+                {/* Mobile Navigation Links (Standard links) */}
+                <nav className="flex flex-col gap-4">
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "text-lg font-medium transition-colors hover:text-primary",
+                        location.pathname === item.href
+                          ? "text-primary"
+                          : "text-foreground/70"
+                      )}
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </nav>
+                
+                {/* Mobile Theme Toggle */}
+                <div className="mt-8 flex flex-col gap-4 border-t border-border/40 pt-6">
+                  <div className="flex justify-center pt-4">
+                    <Button variant="ghost" size="icon">
+                      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                      <span className="sr-only">Toggle theme</span>
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          <div className="hidden md:block">
+            <Button variant="ghost" size="icon">
+              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">Toggle theme</span>
+            </Button>
+          </div>
+          
         </div>
       </nav>
     </header>
