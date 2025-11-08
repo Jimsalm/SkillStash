@@ -2,6 +2,22 @@ import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Code, Palette, Server, MoreHorizontal } from 'lucide-react';
+import { coursesData } from '@/data/courses';
+
+const toSlug = (text: string): string => {
+  return text
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[()]/g, '')
+    .replace(/&/g, 'and');
+};
+
+// Calculate course counts dynamically from coursesData
+const getCourseCount = (category: string, subcategory: string): number => {
+  return coursesData.filter(
+    (course) => course.category === category && course.subcategory === subcategory
+  ).length;
+};
 
 // Define the structure for our categories
 const categoriesData = [
@@ -10,12 +26,12 @@ const categoriesData = [
     icon: <Code className="h-8 w-8 text-blue-600" />,
     description: 'Build websites, apps, and software.',
     subcategories: [
-      { name: 'Web Development', count: 150 },
-      { name: 'Data Science', count: 85 },
-      { name: 'Mobile Development', count: 92 },
-      { name: 'Game Development', count: 45 },
-      { name: 'Programming Languages', count: 210 },
-      { name: 'Software Testing', count: 30 },
+      { name: 'Web Development', count: getCourseCount('Development', 'Web Development') },
+      { name: 'Data Science', count: getCourseCount('Development', 'Data Science') },
+      { name: 'Mobile Development', count: getCourseCount('Development', 'Mobile Development') },
+      { name: 'Game Development', count: getCourseCount('Development', 'Game Development') },
+      { name: 'Programming Languages', count: getCourseCount('Development', 'Programming Languages') },
+      { name: 'Software Testing', count: getCourseCount('Development', 'Software Testing') },
     ],
   },
   {
@@ -23,11 +39,11 @@ const categoriesData = [
     icon: <Palette className="h-8 w-8 text-pink-600" />,
     description: 'Create stunning visuals and designs.',
     subcategories: [
-      { name: 'Graphic Design Tools', count: 75 },
-      { name: 'User Experience (UX) Design', count: 60 },
-      { name: 'User Interface (UI) Design', count: 55 },
-      { name: '3D & Animation', count: 40 },
-      { name: 'Fashion Design', count: 25 },
+      { name: 'Graphic Design Tools', count: getCourseCount('Graphic Design', 'Graphic Design Tools') },
+      { name: 'User Experience (UX) Design', count: getCourseCount('Graphic Design', 'User Experience (UX) Design') },
+      { name: 'User Interface (UI) Design', count: getCourseCount('Graphic Design', 'User Interface (UI) Design') },
+      { name: '3D & Animation', count: getCourseCount('Graphic Design', '3D & Animation') },
+      { name: 'Fashion Design', count: getCourseCount('Graphic Design', 'Fashion Design') },
     ],
   },
   {
@@ -35,11 +51,11 @@ const categoriesData = [
     icon: <Server className="h-8 w-8 text-green-600" />,
     description: 'Manage and secure IT infrastructure.',
     subcategories: [
-      { name: 'Network Administration', count: 50 },
-      { name: 'Cloud Computing', count: 110 },
-      { name: 'Cybersecurity', count: 95 },
-      { name: 'Operating Systems', count: 35 },
-      { name: 'IT Certification', count: 80 },
+      { name: 'Network Administration', count: getCourseCount('Network & System', 'Network Administration') },
+      { name: 'Cloud Computing', count: getCourseCount('Network & System', 'Cloud Computing') },
+      { name: 'Cybersecurity', count: getCourseCount('Network & System', 'Cybersecurity') },
+      { name: 'Operating Systems', count: getCourseCount('Network & System', 'Operating Systems') },
+      { name: 'IT Certification', count: getCourseCount('Network & System', 'IT Certification') },
     ],
   },
   {
@@ -47,12 +63,12 @@ const categoriesData = [
     icon: <MoreHorizontal className="h-8 w-8 text-purple-600" />,
     description: 'Explore a variety of other fields.',
     subcategories: [
-      { name: 'Business', count: 180 },
-      { name: 'Finance & Accounting', count: 120 },
-      { name: 'Marketing', count: 95 },
-      { name: 'Photography & Video', count: 70 },
-      { name: 'Health & Fitness', count: 60 },
-      { name: 'Music', count: 45 },
+      { name: 'Business', count: getCourseCount('Others', 'Business') },
+      { name: 'Finance & Accounting', count: getCourseCount('Others', 'Finance & Accounting') },
+      { name: 'Marketing', count: getCourseCount('Others', 'Marketing') },
+      { name: 'Photography & Video', count: getCourseCount('Others', 'Photography & Video') },
+      { name: 'Health & Fitness', count: getCourseCount('Others', 'Health & Fitness') },
+      { name: 'Music', count: getCourseCount('Others', 'Music') },
     ],
   },
 ];
@@ -101,7 +117,7 @@ const CourseCategory = () => {
                     {category.subcategories.map((sub) => (
                       <Link
                         key={sub.name}
-                        to={`/courses/${category.groupTitle.toLowerCase().replace(' & ', '-').replace(' ', '-')}/${sub.name.toLowerCase().replace(' ', '-')}`}
+                        to={`/courses/${toSlug(category.groupTitle)}/${toSlug(sub.name)}`}
                         className="flex items-center justify-between p-3 rounded-md border border-border hover:bg-accent hover:text-accent-foreground transition-colors"
                       >
                         <span className="text-sm font-medium">{sub.name}</span>

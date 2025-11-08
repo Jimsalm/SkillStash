@@ -2,24 +2,24 @@ import { useParams, Link } from 'react-router-dom';
 import { coursesData } from '@/data/courses';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator'; // You may need to add this: npx shadcn-ui@latest add separator
-import { ExternalLink, ArrowLeft, Users, Clock } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { ExternalLink, ArrowLeft, Users, Clock, Tag } from 'lucide-react';
 
 const CourseDetails = () => {
   const { id } = useParams<{ id: string }>();
   
-  // Find the course with the matching ID
-  const course = coursesData.find((c) => c.id === id);
+  // Find the course with the matching ID (convert string to number)
+  const course = coursesData.find((c) => c.id === Number(id));
 
   // Handle case where course is not found
   if (!course) {
     return (
-      <main className="flex-1 bg-background flex items-center justify-center">
+      <main className="flex-1 bg-background flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h1 className="text-4xl font-bold">Course Not Found</h1>
           <p className="mt-4 text-muted-foreground">Sorry, we couldn't find the course you're looking for.</p>
           <Button asChild className="mt-6">
-            <Link to="/courses">Back to Courses</Link>
+            <Link to="/courses/categories">Back to Categories</Link>
           </Button>
         </div>
       </main>
@@ -31,19 +31,28 @@ const CourseDetails = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <Button variant="ghost" asChild className="mb-6">
-          <Link to="/courses">
+          <Link to="/courses/categories">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Courses
+            Back to Categories
           </Link>
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            <img src={course.image} alt={course.title} className="w-full rounded-lg shadow-lg" />
+            <img 
+              src={course.image} 
+              alt={course.title} 
+              className="w-full rounded-lg shadow-lg"
+            />
+            
             <div>
               <h1 className="text-3xl font-bold">{course.title}</h1>
               <p className="text-lg text-muted-foreground mt-2">by {course.instructor}</p>
+              <div className="flex gap-2 mt-3">
+                <Badge variant="outline">{course.category}</Badge>
+                <Badge variant="outline">{course.subcategory}</Badge>
+              </div>
             </div>
             
             <div>
@@ -53,8 +62,10 @@ const CourseDetails = () => {
 
             <div>
               <h2 className="text-2xl font-semibold mb-2">What you'll learn</h2>
-              <p className="text-muted-foreground">This course covers popular tools and technologies.</p>
-              <div className="flex flex-wrap gap-2 mt-4">
+              <p className="text-muted-foreground mb-4">
+                This course covers popular tools and technologies that will help you master {course.subcategory}.
+              </p>
+              <div className="flex flex-wrap gap-2">
                 {course.software.map((tech) => (
                   <Badge key={tech} variant="outline" className="text-base py-1 px-3">
                     {tech}
@@ -62,6 +73,23 @@ const CourseDetails = () => {
                 ))}
               </div>
             </div>
+
+            {course.couponCode && (
+              <div className="bg-accent/50 p-4 rounded-lg border">
+                <div className="flex items-center gap-2 mb-2">
+                  <Tag className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold">Coupon Code</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Use this code at checkout: <code className="bg-background px-2 py-1 rounded font-mono">{course.couponCode}</code>
+                </p>
+                {course.expiresAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Expires: {new Date(course.expiresAt).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
@@ -72,6 +100,10 @@ const CourseDetails = () => {
                 <span className="ml-2 text-lg text-muted-foreground line-through">
                   ${course.originalPrice}
                 </span>
+              </div>
+              
+              <div className="bg-green-500/10 text-green-600 dark:text-green-400 px-3 py-2 rounded-md text-sm font-medium mb-4">
+                Save ${(course.originalPrice - course.discountedPrice).toFixed(2)} ({Math.round(((course.originalPrice - course.discountedPrice) / course.originalPrice) * 100)}% off)
               </div>
               
               <Separator className="my-4" />
@@ -85,15 +117,32 @@ const CourseDetails = () => {
                   <Clock className="h-4 w-4 mr-2" />
                   <span>Limited time offer</span>
                 </div>
+                <div className="flex items-center">
+                  <Tag className="h-4 w-4 mr-2" />
+                  <span className={course.isActive ? "text-green-600" : "text-red-600"}>
+                    {course.isActive ? "Deal Active" : "Deal Expired"}
+                  </span>
+                </div>
               </div>
 
-              <Button asChild className="w-full text-lg py-3">
+              <Button 
+                asChild 
+                className="w-full text-lg py-3 mb-3"
+                disabled={!course.isActive}
+              >
                 <a href={course.udemyUrl} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="mr-2 h-5 w-5" />
                   Get Deal on Udemy
                 </a>
               </Button>
-              <p className="text-xs text-muted-foreground text-center mt-4">
+              
+              {!course.isActive && (
+                <p className="text-xs text-red-600 text-center mb-2">
+                  This deal has expired
+                </p>
+              )}
+              
+              <p className="text-xs text-muted-foreground text-center">
                 Coupon applied automatically. This is an affiliate link.
               </p>
             </div>

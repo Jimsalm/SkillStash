@@ -25,10 +25,10 @@ function App() {
       {/* Public Routes */}
       <Route path="/" element={<PublicLayout />}>
         <Route index element={<Home />} />
-        <Route path="courses/:group/:subcategory" element={<CourseList />} />
-        <Route path="courses" element={<CourseCategory />} />
+        <Route path="/courses/:category/:subcategory" element={<CourseList />} />
+        <Route path="/courses/categories" element={<CourseCategory />} />
         <Route path="about" element={<About />} />
-        <Route path="course/:id" element={<CourseDetails />} />
+        <Route path="/courses/details/:id" element={<CourseDetails />} />
       </Route>
 
       {/* Admin Login */}
