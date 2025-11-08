@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, Users, TrendingUp, Tag, Clock, Award, Activity } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Users, TrendingUp, Tag, Clock, Award, Activity, ArrowUpRight, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 // Mock data - in a real app, you'd fetch this from your API
@@ -43,10 +45,10 @@ const stats = [
 ];
 
 const recentActivity = [
-  { id: 1, action: 'New course added', course: 'Advanced React Patterns', time: '5 min ago', type: 'success' },
-  { id: 2, action: 'Course updated', course: 'Python for Beginners', time: '1 hour ago', type: 'info' },
-  { id: 3, action: 'Coupon expired', course: 'Web Design Masterclass', time: '2 hours ago', type: 'warning' },
-  { id: 4, action: 'New enrollment', course: 'JavaScript Essentials', time: '3 hours ago', type: 'success' },
+  { id: 1, action: 'New course added', course: 'Advanced React Patterns', time: '5 min ago', type: 'default' },
+  { id: 2, action: 'Course updated', course: 'Python for Beginners', time: '1 hour ago', type: 'secondary' },
+  { id: 3, action: 'Coupon expired', course: 'Web Design Masterclass', time: '2 hours ago', type: 'outline' },
+  { id: 4, action: 'New enrollment', course: 'JavaScript Essentials', time: '3 hours ago', type: 'default' },
   { id: 5, action: 'Course deleted', course: 'Old PHP Tutorial', time: '5 hours ago', type: 'destructive' },
 ];
 
@@ -60,7 +62,7 @@ const topCourses = [
 
 const AdminDashboardPage = () => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -118,10 +120,10 @@ const AdminDashboardPage = () => {
               {recentActivity.map((activity) => (
                 <div key={activity.id} className="flex items-start gap-3 pb-3 border-b last:border-0 last:pb-0">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium">{activity.action}</p>
                       <Badge variant={activity.type as any} className="text-xs">
-                        {activity.type}
+                        {activity.type === 'default' ? 'new' : activity.type}
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{activity.course}</p>
@@ -148,12 +150,12 @@ const AdminDashboardPage = () => {
             <div className="space-y-4">
               {topCourses.map((course, index) => (
                 <div key={course.id} className="flex items-center gap-3 pb-3 border-b last:border-0 last:pb-0">
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm flex-shrink-0">
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{course.title}</p>
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="flex items-center gap-3 mt-1 flex-wrap">
                       <span className="text-xs text-muted-foreground">{course.claims} claims</span>
                       <span className="text-xs text-muted-foreground">★ {course.rating}</span>
                       <span className="text-xs text-green-600 dark:text-green-400">{course.trend}</span>
@@ -172,27 +174,54 @@ const AdminDashboardPage = () => {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button className="p-4 rounded-lg border bg-card hover:bg-secondary transition-colors text-left">
-              <BookOpen className="h-5 w-5 text-primary mb-2" />
-              <p className="text-sm font-medium">Add Course</p>
-              <p className="text-xs text-muted-foreground mt-1">Create new course</p>
-            </button>
-            <button className="p-4 rounded-lg border bg-card hover:bg-secondary transition-colors text-left">
-              <Tag className="h-5 w-5 text-primary mb-2" />
-              <p className="text-sm font-medium">New Coupon</p>
-              <p className="text-xs text-muted-foreground mt-1">Generate coupon</p>
-            </button>
-            <button className="p-4 rounded-lg border bg-card hover:bg-secondary transition-colors text-left">
-              <Users className="h-5 w-5 text-primary mb-2" />
-              <p className="text-sm font-medium">View Users</p>
-              <p className="text-xs text-muted-foreground mt-1">Manage users</p>
-            </button>
-            <button className="p-4 rounded-lg border bg-card hover:bg-secondary transition-colors text-left">
-              <Activity className="h-5 w-5 text-primary mb-2" />
-              <p className="text-sm font-medium">Analytics</p>
-              <p className="text-xs text-muted-foreground mt-1">View reports</p>
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link to="/admin/add-course">
+              <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-start gap-2 hover:bg-secondary">
+                <div className="flex items-center gap-2 w-full">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <ArrowUpRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium">Add Course</p>
+                  <p className="text-xs text-muted-foreground">Create new course</p>
+                </div>
+              </Button>
+            </Link>
+
+            <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-start gap-2 hover:bg-secondary">
+              <div className="flex items-center gap-2 w-full">
+                <Tag className="h-5 w-5 text-primary" />
+                <Plus className="h-4 w-4 ml-auto text-muted-foreground" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-medium">New Coupon</p>
+                <p className="text-xs text-muted-foreground">Generate coupon</p>
+              </div>
+            </Button>
+
+            <Link to="/admin/courses">
+              <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-start gap-2 hover:bg-secondary">
+                <div className="flex items-center gap-2 w-full">
+                  <Users className="h-5 w-5 text-primary" />
+                  <ArrowUpRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium">All Courses</p>
+                  <p className="text-xs text-muted-foreground">Manage courses</p>
+                </div>
+              </Button>
+            </Link>
+
+            <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-start gap-2 hover:bg-secondary">
+              <div className="flex items-center gap-2 w-full">
+                <Activity className="h-5 w-5 text-primary" />
+                <TrendingUp className="h-4 w-4 ml-auto text-muted-foreground" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-medium">Analytics</p>
+                <p className="text-xs text-muted-foreground">View reports</p>
+              </div>
+            </Button>
           </div>
         </CardContent>
       </Card>
