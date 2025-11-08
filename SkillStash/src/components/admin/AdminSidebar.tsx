@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, PlusCircle, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookOpen, PlusCircle, LogOut, BookMarked, Sun, Moon } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/components/theme-provider';
 
 const AdminSidebar = () => {
   const { logout } = useAuth();
+  const { setTheme, theme } = useTheme();
 
   const navItems = [
     { to: '/admin/', label: 'Dashboard', icon: LayoutDashboard },
@@ -13,37 +15,58 @@ const AdminSidebar = () => {
   ];
 
   return (
-    <aside className="w-64 bg-slate-800 text-white flex-shrink-0">
-      <div className="p-6">
-        <h2 className="text-2xl font-bold">SkillStash</h2>
-        <p className="text-xs text-slate-400 mt-1">Admin Panel</p>
+    <aside className="w-64 bg-background border-r flex-shrink-0 flex flex-col">
+      
+      {/* Header */}
+      <div className="p-6 border-b">
+        <div className="flex items-center gap-2">
+          <BookMarked className="h-6 w-6 text-primary" />
+          <div>
+            <h2 className="text-lg font-bold">SkillStash</h2>
+            <p className="text-xs text-muted-foreground">Admin Panel</p>
+          </div>
+        </div>
       </div>
-      <nav className="mt-6">
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end
             className={({ isActive }) =>
-              `flex items-center px-6 py-3 text-sm font-medium transition-colors ${
+              `flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-slate-900 border-r-4 border-primary'
-                  : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-foreground hover:text-foreground hover:bg-secondary'
               }`
             }
           >
-            <item.icon className="mr-3 h-5 w-5" />
+            <item.icon className="h-5 w-5" />
             {item.label}
           </NavLink>
         ))}
       </nav>
-      <div className="absolute bottom-0 w-full p-6">
+
+      {/* Footer */}
+      <div className="p-4 border-t space-y-1">
         <Button
           variant="ghost"
-          className="w-40 justify-start text-slate-300 hover:bg-slate-700 hover:text-white"
+          className="w-full justify-start gap-3 text-foreground hover:text-foreground hover:bg-secondary"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 ml-4" />
+          <span className="ml-8">Toggle Theme</span>
+        </Button>
+        
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-foreground hover:text-destructive hover:bg-destructive/10"
           onClick={logout}
         >
-          <LogOut className="mr-3 h-5 w-5" />
+          <LogOut className="h-5 w-5" />
           Logout
         </Button>
       </div>

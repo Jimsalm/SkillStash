@@ -6,7 +6,7 @@ import { Mail, Heart, Coffee, Target, Zap, Shield } from 'lucide-react';
 
 const About = () => {
   return (
-    <main className="flex-1">
+    <main className="flex-1 bg-background">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary/10 via-primary/5 to-background py-16 md:py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">

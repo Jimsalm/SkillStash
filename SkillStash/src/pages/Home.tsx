@@ -50,7 +50,7 @@ const Home = () => {
   ];
 
   return (
-    <main>
+    <main className="flex-1 bg-background">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary/10 via-primary/5 to-background py-24 md:py-32">
         {/* This div is now responsible for centering */}
