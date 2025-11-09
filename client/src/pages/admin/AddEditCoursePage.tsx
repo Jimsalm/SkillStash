@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from "react-hook-form";
 import { useParams, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { courseService } from '@/services/courseService';
+import type { Course } from '@/services/courseService';
 import {
   Form,
   FormControl,
@@ -50,6 +52,7 @@ const AddEditCoursePage = () => {
   const navigate = useNavigate();
   const isEditMode = Boolean(id);
 
+  const [courses, setCourses] = useState<Course[]>([]);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [softwarePreview, setSoftwarePreview] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -85,14 +88,7 @@ const AddEditCoursePage = () => {
     setLoading(true);
     setFetchError(null);
     try {
-      const response = await fetch(`${API_URL}/courses/${courseId}`);
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch course data');
-      }
-
-      const course = data.data;
-
+      const course = await courseService.getCourseById(courseId);
       let formattedDate = '';
       if (course.expiresAt){
         const date = new Date(course.expiresAt);
@@ -173,37 +169,21 @@ const AddEditCoursePage = () => {
 
       console.log('New Course Data:', courseData);
 
-      let response;
+      let result;
 
       if (isEditMode && id) {
         // Edit existing course
-        response = await fetch(`${API_URL}/courses/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(courseData),
-        });
+        result = await courseService.updateCourse(id, courseData);
+        console.log('Update result:', result);
       } else {
         // Create new course
-        response = await fetch(`${API_URL}/courses`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(courseData),
-        });
+        result = await courseService.createCourse(courseData);
+        console.log('Create result:', result);
       }
 
-      const data = await response.json();
-      if (!response.ok || !data.success ) {
-        throw new Error(data.error || 'Failed to submit course');
-      }
-
-      console.log(`Course ${isEditMode ? 'updated' : 'created'} successfully:`, data.data);
       setSubmitStatus('success');
       
-      // Reset form after 3 seconds
+      // Navigate after 3 seconds
       setTimeout(() => {
         navigate('/admin/courses');
       }, 3000);
