@@ -89,14 +89,13 @@ const AddNewCoursePage = () => {
     ? ((originalPrice - discountedPrice) / originalPrice * 100).toFixed(0)
     : 0;
 
-  function onSubmit(values: CourseFormValues) {
+  async function onSubmit(values: CourseFormValues) {
     try {
-      // Parse software string into array
+      setSubmitStatus('idle')
       const softwareArray = values.software.split(',').map(s => s.trim()).filter(Boolean);
       
       // Create the course object matching your Course interface
       const newCourse = {
-        id: Date.now(), // In real app, this would come from your backend
         title: values.title,
         description: values.description,
         image: values.image,
@@ -115,9 +114,20 @@ const AddNewCoursePage = () => {
 
       console.log('New Course Data:', newCourse);
       
-      // In a real app, you would make an API call here
-      // await addCourse(newCourse);
-      
+      const response = await fetch('http://localhost:5001/api/courses',{
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newCourse),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create course');
+      }
+
+      console.log('Course created successfully:', data);
       setSubmitStatus('success');
       
       // Reset form after 3 seconds
