@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { courseService } from '@/services/courseService';
 import type { Course } from '@/services/courseService';
 import {
@@ -47,6 +47,8 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const AdminCoursesPage = () => {
+  const navigate = useNavigate();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,7 +149,7 @@ const filteredCourses = useMemo(() => {
 
   const handleEdit = (courseId: string) => {
     console.log('Edit course:', courseId);
-    window.location.href = `/admin/courses/edit/${courseId}`;
+    navigate(`/admin/courses/edit/${courseId}`);
   };
 
   const handleDelete = async(courseId: string) => {
@@ -336,7 +338,7 @@ const filteredCourses = useMemo(() => {
           <TableBody>
             {paginatedCourses.length > 0 ? (
               paginatedCourses.map((course, index) => (
-                <TableRow key={course.id}>
+                <TableRow key={course._id}>
                   <TableCell className="text-muted-foreground">
                     {startIndex + index + 1}
                   </TableCell>
@@ -393,7 +395,7 @@ const filteredCourses = useMemo(() => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(course.id)}>
+                        <DropdownMenuItem onClick={() => handleEdit(course._id)}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>

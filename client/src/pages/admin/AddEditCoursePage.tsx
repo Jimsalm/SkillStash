@@ -42,7 +42,6 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { courseFormSchema, categoriesData } from '@/lib/schemas/courseFormSchema';
 import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
-import { set } from 'zod';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
@@ -664,10 +663,10 @@ const AddEditCoursePage = () => {
                         {submitStatus === 'success' ? (
                           <>
                             <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Course Added Successfully!
+                            {id ? 'Course Updated Successfully!' : 'Course Added Successfully!'}
                           </>
                         ) : (
-                          'Add Course'
+                          id ? 'Update Course' : 'Add Course'
                         )}
                       </Button>
                     </form>
