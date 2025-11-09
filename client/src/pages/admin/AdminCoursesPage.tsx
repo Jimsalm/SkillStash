@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
-import { coursesData } from '@/data/courses';
+import { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { courseService } from '@/services/courseService';
+import type { Course } from '@/services/courseService';
 import {
   Table,
   TableBody,
@@ -39,10 +41,15 @@ import {
   Filter,
   Plus,
   X,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const AdminCoursesPage = () => {
-  const [courses, setCourses] = useState(coursesData);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,24 +58,48 @@ const AdminCoursesPage = () => {
   const [instructorFilter, setInstructorFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Get unique categories and instructors for filter options
-  const categoryOptions = useMemo(() => {
-    const categories = [...new Set(courses.map(c => c.category))];
-    return ['all', ...categories];
-  }, [courses]);
+  // Fetch courses on mount
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
-  const instructorOptions = useMemo(() => {
-    const instructors = [...new Set(courses.map(c => c.instructor))];
-    return ['all', ...instructors];
-  }, [courses]);
+  const fetchCourses = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await courseService.getAllCourses();
+      setCourses(data || []);
+    } catch (error: any) {
+      setError(error.message || 'Failed to fetch courses');
+      setCourses([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Get unique categories and instructors for filter options
+const categoryOptions = useMemo(() => {
+  if (!courses || courses.length === 0) return ['all'];
+  const categories = [...new Set(courses.map(c => c.category))];
+  return ['all', ...categories];
+}, [courses]);
+
+const instructorOptions = useMemo(() => {
+  if (!courses || courses.length === 0) return ['all'];
+  const instructors = [...new Set(courses.map(c => c.instructor))];
+  return ['all', ...instructors];
+}, [courses]);
 
   // Check if course discount is active
-  const isCourseActive = (course: any) => {
-    return course.couponCode && course.couponCode.trim() !== '';
+  const isCourseActive = (course: Course) => {
+    return course.isActive !== undefined ? course.isActive : Boolean(course.couponCode && course.couponCode.trim() !== '');
   };
 
-  // Filter courses
-  const filteredCourses = courses.filter((course) => {
+  /// Filter courses
+const filteredCourses = useMemo(() => {
+  if (!courses || courses.length === 0) return [];
+  
+  return courses.filter((course) => {
     const matchesSearch = 
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -88,6 +119,7 @@ const AdminCoursesPage = () => {
 
     return matchesSearch && matchesStatus && matchesCategory && matchesInstructor;
   });
+}, [courses, searchQuery, statusFilter, categoryFilter, instructorFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredCourses.length / pageSize);
@@ -113,23 +145,65 @@ const AdminCoursesPage = () => {
     setCurrentPage(1);
   };
 
-  const handleEdit = (courseId: number) => {
+  const handleEdit = (courseId: string) => {
     console.log('Edit course:', courseId);
-    window.location.href = `/admin/edit-course/${courseId}`;
+    window.location.href = `/admin/courses/edit/${courseId}`;
   };
 
-  const handleDelete = (courseId: number) => {
-    if (confirm('Are you sure you want to delete this course?')) {
-      setCourses(courses.filter(c => c.id !== courseId));
+  const handleDelete = async(courseId: string) => {
+    if (!confirm('Are you sure you want to delete this course?')){
+      return;
+    }
+
+    try {
+      await courseService.deleteCourse(courseId);
+      setCourses(courses.filter(c => c._id !== courseId));
       console.log('Deleted course:', courseId);
+    } catch (error) {
+      alert('Failed to delete course');
+      console.error('Failed to delete course:', error);
     }
   };
+  
 
   const handleNavigate = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || categoryFilter !== 'all' || instructorFilter !== 'all';
+
+  if(loading){
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading courses...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if(error){
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <p className="font-semibold mb-2">Failed to load courses</p>
+            <p className="text-sm">{error}</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-4"
+              onClick={fetchCourses}
+            >
+              Try Again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-10">
