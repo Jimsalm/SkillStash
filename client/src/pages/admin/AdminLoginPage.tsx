@@ -40,7 +40,7 @@ const AdminLoginPage = () => {
     const success = login(values.email, values.password);
     if (success) {
       // Redirect to the page they were trying to access, or default to add-course
-      navigate('/admin/add-course', { replace: true });
+      navigate('/admin/', { replace: true });
     } else {
       setLoginError('Invalid email or password.');
     }

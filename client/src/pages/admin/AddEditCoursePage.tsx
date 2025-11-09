@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { useForm } from "react-hook-form";
+import { useParams, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Form,
@@ -35,16 +36,25 @@ import {
   FolderOpen,
   CheckCircle2,
   AlertCircle,
-  ArrowLeft
+  ArrowLeft,
+  Loader2
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Link } from 'react-router-dom';
 import { courseFormSchema, categoriesData } from '@/lib/schemas/courseFormSchema';
 import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
+import { set } from 'zod';
 
-const AddNewCoursePage = () => {
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+const AddEditCoursePage = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const isEditMode = Boolean(id);
+
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [softwarePreview, setSoftwarePreview] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
@@ -65,6 +75,56 @@ const AddNewCoursePage = () => {
       isActive: true,
     },
   });
+
+  useEffect(() => {
+    if (isEditMode && id) {
+      fetchCourseData(id);
+    }
+  }, [id, isEditMode]);
+
+  const fetchCourseData = async (courseId: string) => {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const response = await fetch(`${API_URL}/courses/${courseId}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch course data');
+      }
+
+      const course = data.data;
+
+      let formattedDate = '';
+      if (course.expiresAt){
+        const date = new Date(course.expiresAt);
+        formattedDate = date.toISOString().split('T')[0];
+      }
+
+      form.reset({
+        title: course.title,
+        description: course.description,
+        instructor: course.instructor,
+        software: course.software.join(', '),
+        originalPrice: course.originalPrice,
+        discountedPrice: course.discountedPrice,
+        claimedCount: course.claimedCount,
+        image: course.image,
+        udemyUrl: course.udemyUrl,
+        couponCode: course.couponCode,
+        expiresAt: formattedDate,
+        category: course.category,
+        subcategory: course.subcategory,
+        isActive: course.isActive,
+      });
+
+      setSoftwarePreview(course.software);
+    } catch (error: any) {
+      console.error('Error fetching course data:', error);
+      setFetchError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const selectedCategory = form.watch('category');
   const softwareInput = form.watch('software');
@@ -95,7 +155,7 @@ const AddNewCoursePage = () => {
       const softwareArray = values.software.split(',').map(s => s.trim()).filter(Boolean);
       
       // Create the course object matching your Course interface
-      const newCourse = {
+      const courseData = {
         title: values.title,
         description: values.description,
         image: values.image,
@@ -112,29 +172,41 @@ const AddNewCoursePage = () => {
         isActive: values.isActive,
       };
 
-      console.log('New Course Data:', newCourse);
-      
-      const response = await fetch('http://localhost:5001/api/courses',{
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newCourse),
-      });
+      console.log('New Course Data:', courseData);
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create course');
+      let response;
+
+      if (isEditMode && id) {
+        // Edit existing course
+        response = await fetch(`${API_URL}/courses/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(courseData),
+        });
+      } else {
+        // Create new course
+        response = await fetch(`${API_URL}/courses`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(courseData),
+        });
       }
 
-      console.log('Course created successfully:', data);
+      const data = await response.json();
+      if (!response.ok || !data.success ) {
+        throw new Error(data.error || 'Failed to submit course');
+      }
+
+      console.log(`Course ${isEditMode ? 'updated' : 'created'} successfully:`, data.data);
       setSubmitStatus('success');
       
       // Reset form after 3 seconds
       setTimeout(() => {
-        form.reset();
-        setSubmitStatus('idle');
-        setSoftwarePreview([]);
+        navigate('/admin/courses');
       }, 3000);
       
     } catch (error) {
@@ -143,10 +215,35 @@ const AddNewCoursePage = () => {
     }
   }
 
+  if (isEditMode && loading) {
+    return (
+      <main className="flex-1 overflow-hidden flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading course data...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (isEditMode && fetchError) {
+    return (
+      <main className="flex-1 overflow-hidden flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Error Loading Course</h2>
+          <p className="text-muted-foreground mb-4">{fetchError}</p>
+          <Button onClick={() => navigate('/admin/courses')}>
+            Back to Courses
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main className="flex-1 overflow-hidden flex flex-col">
-      <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-7xl">
+    <main className="flex-1 overflow-y-auto flex flex-col">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-8xl">
           {/* Header */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
             <div>
@@ -156,11 +253,9 @@ const AddNewCoursePage = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" asChild>
-                <Link to="/admin/courses">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Courses
-                </Link>
+              <Button variant="outline" onClick={() => navigate('/admin/courses')}>
+                <ArrowLeft className="h-4 w-4" />
+                Back to Courses
               </Button>
             </div>
           </div>
@@ -170,7 +265,7 @@ const AddNewCoursePage = () => {
             <Alert className="mb-6 border-green-500 bg-green-50 dark:bg-green-950">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800 dark:text-green-200">
-                Course added successfully! The form will reset shortly.
+                Course {isEditMode ? 'updated' : 'added'} successfully! Redirecting...
               </AlertDescription>
             </Alert>
           )}
@@ -655,9 +750,8 @@ const AddNewCoursePage = () => {
             </div>
           </div>
         </div>
-      </div>
     </main>
   );
 };
 
-export default AddNewCoursePage;
+export default AddEditCoursePage;

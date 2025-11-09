@@ -11,7 +11,7 @@ const AdminSidebar = () => {
   const navItems = [
     { to: '/admin/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/admin/courses', label: 'All Courses', icon: BookOpen },
-    { to: '/admin/add-course', label: 'Add New Course', icon: PlusCircle },
+    { to: '/admin/courses/add', label: 'Add New Course', icon: PlusCircle },
   ];
 
   return (

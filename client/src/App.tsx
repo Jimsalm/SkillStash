@@ -16,7 +16,7 @@ import CourseDetails from './pages/CourseDetails';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminCoursesPage from './pages/admin/AdminCoursesPage';
-import AddNewCoursePage from './pages/admin/AddNewCoursePage';
+import AddEditCoursePage from './pages/admin/AddEditCoursePage';
 
 function App() {
   return (
@@ -45,7 +45,8 @@ function App() {
       >
         <Route index element={<AdminDashboardPage />} />
         <Route path="courses" element={<AdminCoursesPage />} />
-        <Route path="add-course" element={<AddNewCoursePage />} />
+        <Route path="courses/add" element={<AddEditCoursePage />} />
+        <Route path="courses/edit/:id" element={<AddEditCoursePage />} />
       </Route>
 
       {/* 404 Fallback */}
