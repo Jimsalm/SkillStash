@@ -1,4 +1,6 @@
+import React from 'react';
 import * as z from 'zod';
+import { Code, Palette, Server, MoreHorizontal } from 'lucide-react';
 
 // Zod schema for course form validation
 export const courseFormSchema = z.object({
@@ -23,6 +25,30 @@ export const courseFormSchema = z.object({
 
 // Export the inferred type
 export type CourseFormValues = z.infer<typeof courseFormSchema>;
+// Icon mapping for categories
+export const categoryIcons = {
+  'Development': React.createElement(Code, { className: "h-8 w-8 text-blue-600" }),
+  'Graphic Design': React.createElement(Palette, { className: "h-8 w-8 text-pink-600" }),
+  'Network & System': React.createElement(Server, { className: "h-8 w-8 text-green-600" }),
+  'Others': React.createElement(MoreHorizontal, { className: "h-8 w-8 text-purple-600" })
+};
+
+// Description mapping for categories
+export const categoryDescriptions = {
+  'Development': 'Build websites, apps, and software.',
+  'Graphic Design': 'Create stunning visuals and designs.',
+  'Network & System': 'Manage and secure IT infrastructure.',
+  'Others': 'Explore a variety of other fields.'
+};
+// Helper function to get icon for a category
+export const getCategoryIcon = (categoryName: string) => {
+  return categoryIcons[categoryName] || React.createElement(MoreHorizontal, { className: "h-8 w-8 text-gray-600" });
+};
+
+// Helper function to get description for a category
+export const getCategoryDescription = (categoryName: string) => {
+  return categoryDescriptions[categoryName] || 'Explore courses in this category.';
+};
 
 // Categories Data
 export const categoriesData = [

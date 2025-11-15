@@ -1,10 +1,14 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Code, Palette, Server, MoreHorizontal } from 'lucide-react';
-import { coursesData } from '@/data/courses';
+import { Search, Code, Palette, Server, MoreHorizontal, Loader2, AlertCircle } from 'lucide-react';
+import { courseService } from '@/services/courseService';
+import { categoriesData } from '@/lib/schemas/courseFormSchema';
 
-const toSlug = (text: string): string => {
+// Updated toSlug function to handle undefined values
+const toSlug = (text) => {
+  if (!text) return '';
   return text
     .toLowerCase()
     .replace(/\s+/g, '-')
@@ -12,68 +16,90 @@ const toSlug = (text: string): string => {
     .replace(/&/g, 'and');
 };
 
-// Calculate course counts dynamically from coursesData
-const getCourseCount = (category: string, subcategory: string): number => {
-  return coursesData.filter(
-    (course) => course.category === category && course.subcategory === subcategory
-  ).length;
+// Icon mapping for categories
+const categoryIcons = {
+  'Development': <Code className="h-8 w-8 text-blue-600" />,
+  'Graphic Design': <Palette className="h-8 w-8 text-pink-600" />,
+  'Network & System': <Server className="h-8 w-8 text-green-600" />,
+  'Others': <MoreHorizontal className="h-8 w-8 text-purple-600" />
 };
 
-// Define the structure for our categories
-const categoriesData = [
-  {
-    groupTitle: 'Development',
-    icon: <Code className="h-8 w-8 text-blue-600" />,
-    description: 'Build websites, apps, and software.',
-    subcategories: [
-      { name: 'Web Development', count: getCourseCount('Development', 'Web Development') },
-      { name: 'Data Science', count: getCourseCount('Development', 'Data Science') },
-      { name: 'Mobile Development', count: getCourseCount('Development', 'Mobile Development') },
-      { name: 'Game Development', count: getCourseCount('Development', 'Game Development') },
-      { name: 'Programming Languages', count: getCourseCount('Development', 'Programming Languages') },
-      { name: 'Software Testing', count: getCourseCount('Development', 'Software Testing') },
-    ],
-  },
-  {
-    groupTitle: 'Graphic Design',
-    icon: <Palette className="h-8 w-8 text-pink-600" />,
-    description: 'Create stunning visuals and designs.',
-    subcategories: [
-      { name: 'Graphic Design Tools', count: getCourseCount('Graphic Design', 'Graphic Design Tools') },
-      { name: 'User Experience (UX) Design', count: getCourseCount('Graphic Design', 'User Experience (UX) Design') },
-      { name: 'User Interface (UI) Design', count: getCourseCount('Graphic Design', 'User Interface (UI) Design') },
-      { name: '3D & Animation', count: getCourseCount('Graphic Design', '3D & Animation') },
-      { name: 'Fashion Design', count: getCourseCount('Graphic Design', 'Fashion Design') },
-    ],
-  },
-  {
-    groupTitle: 'Network & System',
-    icon: <Server className="h-8 w-8 text-green-600" />,
-    description: 'Manage and secure IT infrastructure.',
-    subcategories: [
-      { name: 'Network Administration', count: getCourseCount('Network & System', 'Network Administration') },
-      { name: 'Cloud Computing', count: getCourseCount('Network & System', 'Cloud Computing') },
-      { name: 'Cybersecurity', count: getCourseCount('Network & System', 'Cybersecurity') },
-      { name: 'Operating Systems', count: getCourseCount('Network & System', 'Operating Systems') },
-      { name: 'IT Certification', count: getCourseCount('Network & System', 'IT Certification') },
-    ],
-  },
-  {
-    groupTitle: 'Others',
-    icon: <MoreHorizontal className="h-8 w-8 text-purple-600" />,
-    description: 'Explore a variety of other fields.',
-    subcategories: [
-      { name: 'Business', count: getCourseCount('Others', 'Business') },
-      { name: 'Finance & Accounting', count: getCourseCount('Others', 'Finance & Accounting') },
-      { name: 'Marketing', count: getCourseCount('Others', 'Marketing') },
-      { name: 'Photography & Video', count: getCourseCount('Others', 'Photography & Video') },
-      { name: 'Health & Fitness', count: getCourseCount('Others', 'Health & Fitness') },
-      { name: 'Music', count: getCourseCount('Others', 'Music') },
-    ],
-  },
-];
+// Description mapping for categories
+const categoryDescriptions = {
+  'Development': 'Build websites, apps, and software.',
+  'Graphic Design': 'Create stunning visuals and designs.',
+  'Network & System': 'Manage and secure IT infrastructure.',
+  'Others': 'Explore a variety of other fields.'
+};
 
 const CourseCategory = () => {
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredCategories, setFilteredCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const allCourses = await courseService.getAllCourses();
+        setCourses(allCourses);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  useEffect(() => {
+    // Calculate course counts dynamically from fetched courses
+    const categoriesWithCounts = categoriesData.map(category => ({
+      ...category,
+      subcategories: category.subcategories.map(subName => {
+        const count = courses.filter(
+          (course) => course.category === category.name && course.subcategory === subName
+        ).length;
+        return { name: subName, count };
+      })
+    }));
+
+    // Filter categories based on search term
+    if (searchTerm) {
+      const filtered = categoriesWithCounts.map(category => ({
+        ...category,
+        subcategories: category.subcategories.filter(sub => 
+          sub.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      })).filter(category => category.subcategories.length > 0);
+      
+      setFilteredCategories(filtered);
+    } else {
+      setFilteredCategories(categoriesWithCounts);
+    }
+  }, [courses, searchTerm]);
+
+  if (loading) {
+    return (
+      <main className="flex-1 bg-background flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="flex-1 bg-background flex justify-center items-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+          <p className="text-red-600">{error}</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="flex-1 bg-background">
       {/* Header Section */}
@@ -92,6 +118,8 @@ const CourseCategory = () => {
               type="search"
               placeholder="Search for a category..."
               className="pl-10"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
@@ -101,14 +129,14 @@ const CourseCategory = () => {
       <section className="py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-            {categoriesData.map((category, index) => (
+            {filteredCategories.map((category, index) => (
               <Card key={index} className="transition-all duration-300 hover:shadow-lg">
                 <CardHeader>
                   <div className="flex items-center space-x-3">
-                    {category.icon}
+                    {categoryIcons[category.name] || <MoreHorizontal className="h-8 w-8 text-gray-600" />}
                     <div>
-                      <CardTitle className="text-xl">{category.groupTitle}</CardTitle>
-                      <CardDescription>{category.description}</CardDescription>
+                      <CardTitle className="text-xl">{category.name}</CardTitle>
+                      <CardDescription>{categoryDescriptions[category.name] || 'Explore courses in this category.'}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -117,7 +145,7 @@ const CourseCategory = () => {
                     {category.subcategories.map((sub) => (
                       <Link
                         key={sub.name}
-                        to={`/courses/${toSlug(category.groupTitle)}/${toSlug(sub.name)}`}
+                        to={`/courses/${toSlug(category.name)}/${toSlug(sub.name)}`}
                         className="flex items-center justify-between p-3 rounded-md border border-border hover:bg-accent hover:text-accent-foreground transition-colors"
                       >
                         <span className="text-sm font-medium">{sub.name}</span>

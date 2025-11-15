@@ -1,17 +1,59 @@
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { coursesData } from '@/data/courses';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ExternalLink, ArrowLeft, Users, Clock, Tag } from 'lucide-react';
+import { ExternalLink, ArrowLeft, Users, Clock, Tag, Loader2, AlertCircle } from 'lucide-react';
+import { courseService } from '@/services/courseService';
 
 const CourseDetails = () => {
   const { id } = useParams<{ id: string }>();
-  
-  // Find the course with the matching ID (convert string to number)
-  const course = coursesData.find((c) => c.id === Number(id));
+  const [course, setCourse] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Handle case where course is not found
+  useEffect(() => {
+    const fetchCourse = async () => {
+      if (!id) return;
+      try {
+        const fetchedCourse = await courseService.getCourseById(id);
+        setCourse(fetchedCourse);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourse();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <main className="flex-1 bg-background flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading course details...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="flex-1 bg-background flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Error Loading Course</h1>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button asChild>
+            <Link to="/courses/categories">Back to Categories</Link>
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
   if (!course) {
     return (
       <main className="flex-1 bg-background flex items-center justify-center min-h-screen">
@@ -25,6 +67,10 @@ const CourseDetails = () => {
       </main>
     );
   }
+
+  const savings = course.originalPrice > 0 && course.discountedPrice > 0 
+    ? Math.round(((course.originalPrice - course.discountedPrice) / course.originalPrice) * 100)
+    : 0;
 
   return (
     <main className="flex-1 bg-background">
@@ -44,6 +90,7 @@ const CourseDetails = () => {
               src={course.image} 
               alt={course.title} 
               className="w-full rounded-lg shadow-lg"
+              onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/800x450?text=No+Image+Available'; }}
             />
             
             <div>
@@ -66,7 +113,7 @@ const CourseDetails = () => {
                 This course covers popular tools and technologies that will help you master {course.subcategory}.
               </p>
               <div className="flex flex-wrap gap-2">
-                {course.software.map((tech) => (
+                {course.software.map((tech: string) => (
                   <Badge key={tech} variant="outline" className="text-base py-1 px-3">
                     {tech}
                   </Badge>
@@ -103,7 +150,7 @@ const CourseDetails = () => {
               </div>
               
               <div className="bg-green-500/10 text-green-600 dark:text-green-400 px-3 py-2 rounded-md text-sm font-medium mb-4">
-                Save ${(course.originalPrice - course.discountedPrice).toFixed(2)} ({Math.round(((course.originalPrice - course.discountedPrice) / course.originalPrice) * 100)}% off)
+                Save ${(course.originalPrice - course.discountedPrice).toFixed(2)} ({savings}% off)
               </div>
               
               <Separator className="my-4" />
