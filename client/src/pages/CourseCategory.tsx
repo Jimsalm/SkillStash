@@ -1,10 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Code, Palette, Server, MoreHorizontal, Loader2, AlertCircle } from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { categoriesData } from '@/lib/schemas/courseFormSchema';
+import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
+
+interface SubcategoryWithCount {
+  name: string;
+  count: number;
+}
+
+interface CategoryWithCount {
+  name: string; 
+  subcategories: SubcategoryWithCount[];
+}
 
 // Updated toSlug function to handle undefined values
 const toSlug = (text?: string) => {
@@ -15,9 +26,10 @@ const toSlug = (text?: string) => {
     .replace(/[()]/g, '')
     .replace(/&/g, 'and');
 };
+export type CategoryKey = 'Development' | 'Graphic Design' | 'Network & System' | 'Others';
 
 // Icon mapping for categories
-const categoryIcons = {
+const categoryIcons: Record<string, JSX.Element> = {
   'Development': <Code className="h-8 w-8 text-blue-600" />,
   'Graphic Design': <Palette className="h-8 w-8 text-pink-600" />,
   'Network & System': <Server className="h-8 w-8 text-green-600" />,
@@ -25,7 +37,7 @@ const categoryIcons = {
 };
 
 // Description mapping for categories
-const categoryDescriptions = {
+const categoryDescriptions: Record<CategoryKey, string> = {
   'Development': 'Build websites, apps, and software.',
   'Graphic Design': 'Create stunning visuals and designs.',
   'Network & System': 'Manage and secure IT infrastructure.',
@@ -33,19 +45,35 @@ const categoryDescriptions = {
 };
 
 const CourseCategory = () => {
-  const [courses, setCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<CourseFormValues[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredCategories, setFilteredCategories] = useState<any[]>([]);
+  const [filteredCategories, setFilteredCategories] = useState<CategoryWithCount[]>([]);
 
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         const allCourses = await courseService.getAllCourses();
-        setCourses(allCourses);
+
+        const coursesAsFormValues = allCourses.map(course => {
+          const softwareString = Array.isArray(course.software) 
+            ? course.software.join(', ') 
+            : String(course.software);
+
+          return {
+            ...course,
+            software: softwareString,
+          };
+        });
+
+        setCourses(coursesAsFormValues);
       } catch (err) {
-        setError(err.message);
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('An unknown error occurred');
+        }
       } finally {
         setLoading(false);
       }
@@ -136,7 +164,7 @@ const CourseCategory = () => {
                     {categoryIcons[category.name] || <MoreHorizontal className="h-8 w-8 text-gray-600" />}
                     <div>
                       <CardTitle className="text-xl">{category.name}</CardTitle>
-                      <CardDescription>{categoryDescriptions[category.name] || 'Explore courses in this category.'}</CardDescription>
+                      <CardDescription>{categoryDescriptions[category.name as CategoryKey] || 'Explore courses in this category.'}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
