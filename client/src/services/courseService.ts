@@ -116,6 +116,27 @@ export const courseService = {
         }
     },
 
+    // Increment Claimed Count
+    incrementClaimedCount: async (id: string): Promise<Course> => {
+        try {
+            const response = await fetch(`${API_URL}/courses/${id}/increment-claim`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to increment claimed count');
+            }
+            return data.data;
+        } catch (error) {
+            console.error('Error incrementing claimed count:', error);
+            throw error;
+        }
+    },
+
     //Toggle Active Status
     toggleCourseActiveStatus: async (id: string): Promise<Course> => {
         try {

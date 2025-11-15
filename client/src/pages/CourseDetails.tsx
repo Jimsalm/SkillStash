@@ -3,14 +3,19 @@ import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ExternalLink, ArrowLeft, Users, Clock, Tag, Loader2, AlertCircle } from 'lucide-react';
+import { ExternalLink, ArrowLeft, Users, Clock, Tag, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { courseService } from '@/services/courseService';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const CourseDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [isClaiming, setIsClaiming] = useState<boolean>(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [isClaimed, setIsClaimed] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -27,6 +32,25 @@ const CourseDetails = () => {
 
     fetchCourse();
   }, [id]);
+
+  const handleClaimCourse = async () => {
+    if (isClaiming || isClaimed) return;
+
+    setIsClaiming(true);
+    setClaimError(null);
+
+    try{
+      window.open(course.udemyUrl, '_blank', 'noopener,noreferrer');
+      
+      const updateCourse = await courseService.incrementClaimedCount(id!);
+      setCourse(updateCourse);
+      setIsClaimed(true);
+    }catch(err:any){
+      setClaimError(err.message || 'Failed to claim the course.');
+    }finally{
+      setIsClaiming(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -173,21 +197,42 @@ const CourseDetails = () => {
               </div>
 
               <Button 
-                asChild 
-                className="w-full text-lg py-3 mb-3"
-                disabled={!course.isActive}
-              >
-                <a href={course.udemyUrl} target="_blank" rel="noopener noreferrer">
+              onClick={handleClaimCourse}
+              className="w-full text-lg py-3 mb-3"
+              disabled={!course.isActive || isClaiming || isClaimed}
+            >
+              {isClaiming ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Claiming...
+                </>
+              ) : isClaimed ? (
+                <>
+                  <CheckCircle className="mr-2 h-5 w-5" />
+                  Claimed
+                </>
+              ) : (
+                <>
                   <ExternalLink className="mr-2 h-5 w-5" />
                   Get Deal on Udemy
-                </a>
-              </Button>
+                </>
+              )}
+            </Button>
               
               {!course.isActive && (
                 <p className="text-xs text-red-600 text-center mb-2">
                   This deal has expired
                 </p>
               )}
+
+              {claimError && (
+              <Alert className="mt-3 border-red-500 bg-red-50 dark:bg-red-950">
+                <AlertCircle className="h-4 w-4 text-red-600" />
+                <AlertDescription className="text-red-800 dark:text-red-200">
+                  {claimError}
+                </AlertDescription>
+              </Alert>
+            )}
               
               <p className="text-xs text-muted-foreground text-center">
                 Coupon applied automatically.

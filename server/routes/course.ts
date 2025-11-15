@@ -152,6 +152,29 @@ router.patch('/:id/toggle-active', async (req: Request, res: Response) => {
     }
 });
 
+//PATCH /api/courses/:id/increment-claim - Increment claimed count
+router.patch('/:id/increment-claim', async (req: Request, res: Response) => {
+    try {
+        const course = await Course.findById(req.params.id);
+        if (!course) {
+            return res.status(404).json({ 
+                message: 'Course not found',
+                success: false });
+        }
+        course.claimedCount += 1;
+        await course.save();
+        res.json({ 
+            success: true, 
+            data: course,
+            message: 'Course claimed count incremented successfully' });
+    } catch (error) {
+        console.error('Error incrementing course claimed count:', error);
+        res.status(500).json({ 
+            message: 'Internal server error',
+            success: false });
+    }
+});
+
 //GET /api/courses/stats/summary - Get course statistics
 router.get('/stats/summary', async (req: Request, res: Response) => {
     try {
