@@ -46,12 +46,18 @@ const CourseCard = ({ course }: { course: any }) => {
           </div>
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-2xl font-bold text-primary">${course.discountedPrice}</span>
-              <span className="ml-2 text-sm text-muted-foreground line-through">
-                ${course.originalPrice}
-              </span>
+              {course.discountedPrice === 0 ? (
+                <span className="text-2xl font-bold text-primary">FREE</span>
+              ) : (
+                <>
+                  <span className="text-2xl font-bold text-primary">${course.discountedPrice}</span>
+                  <span className="ml-2 text-sm text-muted-foreground line-through">
+                    ${course.originalPrice}
+                  </span>
+                </>
+              )}
             </div>
-             {savings > 0 && (
+            {course.discountedPrice > 0 && savings > 0 && (
               <Badge variant="destructive">
                 {savings}% OFF
               </Badge>

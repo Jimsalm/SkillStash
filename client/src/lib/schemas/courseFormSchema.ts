@@ -9,7 +9,7 @@ export const courseFormSchema = z.object({
   instructor: z.string().min(2, 'Instructor name is required.'),
   software: z.string().min(1, 'Please add at least one technology (comma-separated)'),
   originalPrice: z.number().positive('Original price must be a positive number.'),
-  discountedPrice: z.number().positive('Discounted price must be a positive number.'),
+  discountedPrice: z.number().nonnegative('Discounted price must be a positive number.'),
   claimedCount: z.number().min(0, 'Claimed count cannot be negative.'),
   image: z.string().url('Please enter a valid image URL.'),
   udemyUrl: z.string().url('Please enter a valid Udemy URL.'),
