@@ -7,7 +7,7 @@ import { courseService } from '@/services/courseService';
 import { categoriesData } from '@/lib/schemas/courseFormSchema';
 
 // Updated toSlug function to handle undefined values
-const toSlug = (text) => {
+const toSlug = (text?: string) => {
   if (!text) return '';
   return text
     .toLowerCase()
