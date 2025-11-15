@@ -190,7 +190,7 @@ const CourseDetails = () => {
               )}
               
               <p className="text-xs text-muted-foreground text-center">
-                Coupon applied automatically. This is an affiliate link.
+                Coupon applied automatically.
               </p>
             </div>
           </div>
