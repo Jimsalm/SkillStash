@@ -2,6 +2,9 @@ import React from 'react';
 import * as z from 'zod';
 import { Code, Palette, Server, MoreHorizontal } from 'lucide-react';
 
+// Define category name type
+export type CategoryName = 'Development' | 'Graphic Design' | 'Network & System' | 'Others';
+
 // Zod schema for course form validation
 export const courseFormSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -25,6 +28,7 @@ export const courseFormSchema = z.object({
 
 // Export the inferred type
 export type CourseFormValues = z.infer<typeof courseFormSchema>;
+
 // Icon mapping for categories
 export const categoryIcons = {
   'Development': React.createElement(Code, { className: "h-8 w-8 text-blue-600" }),
@@ -40,13 +44,14 @@ export const categoryDescriptions = {
   'Network & System': 'Manage and secure IT infrastructure.',
   'Others': 'Explore a variety of other fields.'
 };
+
 // Helper function to get icon for a category
-export const getCategoryIcon = (categoryName: string) => {
+export const getCategoryIcon = (categoryName: CategoryName) => {
   return categoryIcons[categoryName] || React.createElement(MoreHorizontal, { className: "h-8 w-8 text-gray-600" });
 };
 
 // Helper function to get description for a category
-export const getCategoryDescription = (categoryName: string) => {
+export const getCategoryDescription = (categoryName: CategoryName) => {
   return categoryDescriptions[categoryName] || 'Explore courses in this category.';
 };
 
