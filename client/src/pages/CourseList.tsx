@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import { useParams, Link } from 'react-router-dom';
+import type { Course } from '@/services/courseService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -155,7 +156,7 @@ const CourseList = () => {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           {courses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map((course) => (
+              {courses.map((course: Course) => (
                 <CourseCard key={course._id} course={course} />
               ))}
             </div>

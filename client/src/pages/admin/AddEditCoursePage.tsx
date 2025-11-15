@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm } from "react-hook-form";
+import { useForm } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { courseService } from '@/services/courseService';
@@ -128,21 +128,21 @@ const AddEditCoursePage = () => {
   const discountedPrice = form.watch('discountedPrice');
 
   // Update software preview when input changes
-  useState(() => {
+  useEffect(() => {
     if (softwareInput) {
-      const techs = softwareInput.split(',').map(t => t.trim()).filter(Boolean);
+      const techs = softwareInput.split(',').map((t: string) => t.trim()).filter(Boolean);
       setSoftwarePreview(techs);
     } else {
       setSoftwarePreview([]);
     }
-  });
+  }, [softwareInput]);
 
   const availableSubcategories = categoriesData
     .find((cat) => cat.name === selectedCategory)?.subcategories || [];
 
   // Calculate savings
   const savings = originalPrice > 0 && discountedPrice > 0 
-    ? ((originalPrice - discountedPrice) / originalPrice * 100).toFixed(0)
+    ? Math.round(((Number(originalPrice) - Number(discountedPrice)) / Number(originalPrice)) * 100)
     : 0;
 
   async function onSubmit(values: CourseFormValues) {
@@ -469,10 +469,14 @@ const AddEditCoursePage = () => {
                             />
                           </div>
 
-                          {savings > 0 && (
+                          {(savings >= 0 && originalPrice > 0) && (
                             <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3">
                               <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                💰 Students save {savings}% (${(originalPrice - discountedPrice).toFixed(2)})
+                                {savings > 0 ? (
+                                  `💰 Students save ${savings}% ($${(Number(originalPrice) - Number(discountedPrice)).toFixed(2)})`
+                                ) : (
+                                  '🎉 This course is already at its best price!' 
+                                )}
                               </p>
                             </div>
                           )}
