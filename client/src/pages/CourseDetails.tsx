@@ -6,10 +6,11 @@ import { Separator } from '@/components/ui/separator';
 import { ExternalLink, ArrowLeft, Users, Clock, Tag, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { courseService } from '@/services/courseService';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
 
 const CourseDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const [course, setCourse] = useState<any>(null);
+  const [course, setCourse] = useState<CourseFormValues | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,9 +23,17 @@ const CourseDetails = () => {
       if (!id) return;
       try {
         const fetchedCourse = await courseService.getCourseById(id);
-        setCourse(fetchedCourse);
-      } catch (err) {
-        setError(err.message);
+        
+        if (fetchedCourse) {
+          const courseForForm: CourseFormValues = {
+            ...fetchedCourse,
+            software: fetchedCourse.software.join(', '),
+          };
+
+          setCourse(courseForForm);
+        }
+      } catch (err: unknown) {
+        setError((err as Error).message);
       } finally {
         setLoading(false);
       }
@@ -34,23 +43,30 @@ const CourseDetails = () => {
   }, [id]);
 
   const handleClaimCourse = async () => {
-    if (isClaiming || isClaimed) return;
+    if (isClaiming || isClaimed || !course || !id) return;
 
     setIsClaiming(true);
     setClaimError(null);
 
-    try{
+    try {
       window.open(course.udemyUrl, '_blank', 'noopener,noreferrer');
       
-      const updateCourse = await courseService.incrementClaimedCount(id!);
-      setCourse(updateCourse);
+      const updateCourse = await courseService.incrementClaimedCount(id);
+      const updatedCourseForm = {
+        ...updateCourse,
+        software: Array.isArray(updateCourse.software) 
+          ? updateCourse.software.join(', ')
+          : updateCourse.software
+      } as CourseFormValues;
+      
+      setCourse(updatedCourseForm);
       setIsClaimed(true);
-    }catch(err:any){
-      setClaimError(err.message || 'Failed to claim the course.');
-    }finally{
+    } catch(err: unknown) {
+      setClaimError((err as Error).message || 'Failed to claim the course.');
+    } finally {
       setIsClaiming(false);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -96,6 +112,10 @@ const CourseDetails = () => {
     ? Math.round(((course.originalPrice - course.discountedPrice) / course.originalPrice) * 100)
     : 0;
 
+  const getSoftwareList = (software: string): string[] => {
+    return software.split(',').map(tech => tech.trim()).filter(Boolean);
+  };
+
   return (
     <main className="flex-1 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -137,7 +157,8 @@ const CourseDetails = () => {
                 This course covers popular tools and technologies that will help you master {course.subcategory}.
               </p>
               <div className="flex flex-wrap gap-2">
-                {course.software.map((tech: string) => (
+                {/* Use the helper function to split the software string into an array */}
+                {getSoftwareList(course.software).map((tech: string) => (
                   <Badge key={tech} variant="outline" className="text-base py-1 px-3">
                     {tech}
                   </Badge>
@@ -197,27 +218,27 @@ const CourseDetails = () => {
               </div>
 
               <Button 
-              onClick={handleClaimCourse}
-              className="w-full text-lg py-3 mb-3"
-              disabled={!course.isActive || isClaiming || isClaimed}
-            >
-              {isClaiming ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Claiming...
-                </>
-              ) : isClaimed ? (
-                <>
-                  <CheckCircle className="mr-2 h-5 w-5" />
-                  Claimed
-                </>
-              ) : (
-                <>
-                  <ExternalLink className="mr-2 h-5 w-5" />
-                  Get Deal on Udemy
-                </>
-              )}
-            </Button>
+                onClick={handleClaimCourse}
+                className="w-full text-lg py-3 mb-3"
+                disabled={!course.isActive || isClaiming || isClaimed}
+              >
+                {isClaiming ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Claiming...
+                  </>
+                ) : isClaimed ? (
+                  <>
+                    <CheckCircle className="mr-2 h-5 w-5" />
+                    Claimed
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="mr-2 h-5 w-5" />
+                    Get Deal on Udemy
+                  </>
+                )}
+              </Button>
               
               {!course.isActive && (
                 <p className="text-xs text-red-600 text-center mb-2">
@@ -226,13 +247,13 @@ const CourseDetails = () => {
               )}
 
               {claimError && (
-              <Alert className="mt-3 border-red-500 bg-red-50 dark:bg-red-950">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800 dark:text-red-200">
-                  {claimError}
-                </AlertDescription>
-              </Alert>
-            )}
+                <Alert className="mt-3 border-red-500 bg-red-50 dark:bg-red-950">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800 dark:text-red-200">
+                    {claimError}
+                  </AlertDescription>
+                </Alert>
+              )}
               
               <p className="text-xs text-muted-foreground text-center">
                 Coupon applied automatically.
