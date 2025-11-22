@@ -208,7 +208,7 @@ const filteredCourses = useMemo(() => {
   }
 
   return (
-    <div className="space-y-6 p-10">
+    <div className="space-y-6 p-12">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

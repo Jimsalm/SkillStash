@@ -20,7 +20,6 @@ import AddEditCoursePage from './pages/admin/AddEditCoursePage';
 
 function App() {
   return (
-    // NO Header, Footer, or wrapper div here. The layouts handle everything.
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<PublicLayout />}>
@@ -38,9 +37,7 @@ function App() {
       <Route
         path="/admin"
         element={
-          <ProtectedRoute>
-            <AdminLayout />
-          </ProtectedRoute>
+          <AdminLayout />
         }
       >
         <Route index element={<AdminDashboardPage />} />
