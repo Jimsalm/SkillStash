@@ -1,0 +1,33 @@
+@baseUrl = http://localhost:5001/api
+
+### Get all active courses
+GET {{baseUrl}}/courses/active
+Content-Type: application/json
+
+### Get course by ID
+GET {{baseUrl}}/courses/691602cb25ececba253260b3
+Content-Type: application/json
+
+### Create a new course
+POST {{baseUrl}}/courses
+Content-Type: application/json
+
+{
+  "title": "New Course",
+  "description": "Course description",
+  "category": "programming",
+  "level": "beginner",
+  "isActive": true
+}
+
+### Update a course
+PUT {{baseUrl}}/courses/1
+Content-Type: application/json
+
+{
+  "title": "Updated Course Title",
+  "description": "Updated description"
+}
+
+### Delete a course
+DELETE {{baseUrl}}/courses/1

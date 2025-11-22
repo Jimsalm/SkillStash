@@ -54,7 +54,7 @@ const CourseCategory = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const allCourses = await courseService.getAllCourses();
+        const allCourses = await courseService.getActiveCourses();
 
         const coursesAsFormValues = allCourses.map(course => {
           const softwareString = Array.isArray(course.software) 

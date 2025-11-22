@@ -34,6 +34,26 @@ router.get('/', async (req: Request, res: Response) => {
     }
 });
 
+//GET /api/courses/active - Get active courses
+router.get('/active', async (req: Request, res: Response) => {
+    try {
+        const courses = await Course.find({ isActive: true }).sort({ createdAt: -1 });
+        
+        res.status(200).json({ 
+            success: true, 
+            data: courses,
+            count: courses.length
+        });
+    } catch (error) {
+        console.error('Detailed error fetching active courses:', error); 
+        
+        res.status(500).json({ 
+            message: 'Internal server error',
+            success: false 
+        });
+    }
+});
+
 // GET /api/courses/:id - Retrieve a single course by ID
 router.get('/:id', async (req: Request, res: Response) => {
     try {
@@ -206,5 +226,6 @@ router.get('/stats/summary', async (req: Request, res: Response) => {
         });
     }
 });
+
 
 export default router;

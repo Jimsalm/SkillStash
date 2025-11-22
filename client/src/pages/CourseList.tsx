@@ -100,9 +100,9 @@ const CourseList = () => {
   useEffect(() => {
     const fetchCoursesByCategory = async () => {
       try {
-        const allCourses = await courseService.getAllCourses();
+        const allCourses = await courseService.getActiveCourses();
         const filteredCourses = allCourses.filter(
-          (course) =>
+          (course: Course) =>
             course.category === categoryName &&
             course.subcategory === subcategoryName
         );

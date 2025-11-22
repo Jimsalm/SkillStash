@@ -39,6 +39,21 @@ export const courseService = {
         }
     },
 
+    //Fetch active courses
+    getActiveCourses: async (): Promise<Course[]> => {
+        try {
+            const response = await fetch(`${API_URL}/courses/active`);
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to fetch active courses');
+            }
+            return data.data;
+        } catch (error) {
+            console.error('Error fetching active courses:', error);
+            throw error;
+        }
+    },
+
     // Fetch a course by ID
     getCourseById: async (id: string): Promise<Course> => {
         try {
@@ -154,4 +169,5 @@ export const courseService = {
             throw error;
         }
     },
+
 };
