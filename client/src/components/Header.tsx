@@ -131,8 +131,7 @@ const Header = () => {
           
           <div>
             <Button >
-              <Link to={'/register'}>
-              
+              <Link to={'/auth/register'}>
                         Register
               </Link>
             </Button>

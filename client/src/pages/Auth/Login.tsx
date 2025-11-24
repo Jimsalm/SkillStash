@@ -12,32 +12,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
-const Register = () => {
+const Login = () => {
   return (
     <>
       <div className="flex justify-center items-center min-h-[100vh]">
         <Card className="flex flex-row w-full max-w-4xl p-4 space-x-6 ">
-          <CardContent className="flex-[1]  "></CardContent>
-          <CardContent className="flex  flex-col justify-center  max-w-md w-full space-y-3 py-3">
-            <Label>Name</Label>
-            <Input type="Text" placeholder="Name"></Input>
+          <CardContent className="w-full flex flex-col  justify-center space-y-4 mt-3 ">
             <Label>Email</Label>
             <Input type="Text" placeholder="Email"></Input>
             <Label>Password</Label>
             <Input type="Password" placeholder="Password"></Input>
-            <Label>Confirm Password</Label>
-            <Input type="Password" placeholder="Confirm Password"></Input>
             <div className="w-full flex flex-col items-center justify-center space-y-4 mt-3">
               <Button>Register</Button>
-              <Link to={"/auth/login"}>
-                <Label>Already have an account?</Label>
+              <Link to={"/auth/register"}>
+                <Label>Don't have an account?</Label>
               </Link>
             </div>
           </CardContent>
+          <CardContent className="flex  flex-col justify-center  max-w-md w-full space-y-3 py-3"></CardContent>
         </Card>
       </div>
     </>
   );
 };
 
-export default Register;
+export default Login;
