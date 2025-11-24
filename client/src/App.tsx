@@ -11,12 +11,15 @@ import About from './pages/About';
 import CourseCategory from './pages/CourseCategory';
 import CourseList from './pages/CourseList';
 import CourseDetails from './pages/CourseDetails';
+import Register from './pages/Auth/Register';
 
 // --- Admin Pages ---
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminCoursesPage from './pages/admin/AdminCoursesPage';
 import AddEditCoursePage from './pages/admin/AddEditCoursePage';
+import AuthLayout from './components/AuthLayout';
+
 
 function App() {
   return (
@@ -28,6 +31,11 @@ function App() {
         <Route path="/courses/categories" element={<CourseCategory />} />
         <Route path="about" element={<About />} />
         <Route path="/courses/details/:id" element={<CourseDetails />} />
+      </Route>
+
+      {/* Para sa login at Register*/ }
+      <Route path='/auth' element={<AuthLayout/>}>
+        <Route path='/register' element={<Register />}/>
       </Route>
 
       {/* Admin Login */}

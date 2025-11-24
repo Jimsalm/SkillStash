@@ -26,6 +26,7 @@ const Header = () => {
     { name: 'Home', href: '/' },
     { name: 'Course Category', href: '/courses/categories' },
     { name: 'About Us', href: '/about' },
+    
   ];
 
   return (
@@ -114,6 +115,8 @@ const Header = () => {
                     </Button>
                   </div>
                 </div>
+
+
               </SheetContent>
             </Sheet>
           </div>
@@ -126,6 +129,14 @@ const Header = () => {
             </Button>
           </div>
           
+          <div>
+            <Button >
+              <Link to={'/register'}>
+              
+                        Register
+              </Link>
+            </Button>
+          </div>
         </div>
       </nav>
     </header>
