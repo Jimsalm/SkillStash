@@ -1,7 +1,7 @@
 @baseUrl = http://localhost:5001/api
 
 ### Get all active courses
-GET {{baseUrl}}/courses/active
+GET {{baseUrl}}/courses
 Content-Type: application/json
 
 ### Get course by ID
