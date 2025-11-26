@@ -9,7 +9,7 @@ export interface User {
 export const authService = {
   registerUser: async (userData: Partial<User>): Promise<User | undefined> => {
     try {
-      const response = await fetch(`${API_URL}/register`, {
+      const response = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -31,7 +31,7 @@ export const authService = {
 
   loginUser: async (userData: Partial<User>): Promise<User | undefined> => {
     try {
-      const response = await fetch(`${API_URL}/login`, {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -44,6 +44,7 @@ export const authService = {
         throw new Error(loginData.message || "Error has occured");
       }
 
+      localStorage.setItem("token", loginData.token);
       return loginData.data;
     } catch (error) {
       console.error("Error has occured: ", error);
@@ -51,5 +52,16 @@ export const authService = {
     }
   },
 
-  getCurrentUser: async (): Promise<undefined> => {},
+  getCurrentUser: async (): Promise<undefined> => {
+    const token = localStorage.getItem("token");
+
+    const response = await fetch(`${API_URL}/auth/me`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.json();
+  },
 };

@@ -2,6 +2,18 @@ import express, { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import User from "../models/User";
 import jwt from "jsonwebtoken";
+import { authMiddleware } from "../middleware/auth";
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email?: string;
+      };
+    }
+  }
+}
 
 const router = express.Router();
 
@@ -61,6 +73,14 @@ router.post("/login", async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({ msg: "Internal Server Error", error });
   }
+});
+
+router.get("/me", authMiddleware, async (req: Request, res: Response) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ msg: "Unauthorized" });
+  }
+  const user = await User.findById(req.user.id).select("-password");
+  res.json(user);
 });
 
 export default router;
