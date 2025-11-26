@@ -9,3 +9,12 @@ Content-Type: application/json
     "email": "test@gmail.com",
     "password": "password"
 } 
+
+###Login
+POST {{baseurl}}/auth/login
+Content-Type: application/json
+
+{
+    "email" : "test@gmail.com",
+    "password": "password"
+}
