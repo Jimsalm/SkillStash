@@ -7,8 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useState } from "react";
-import { authService } from "@/services/authService";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
