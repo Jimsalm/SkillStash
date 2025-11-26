@@ -20,7 +20,7 @@ const Register = () => {
   const [password, setPassword] = useState<string>("");
   const [confirmPass, setConfirmPass] = useState<string>("");
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: any) => {
     e.preventDefault();
     if (password != confirmPass) {
       return console.log("Password has to match");
@@ -40,20 +40,41 @@ const Register = () => {
         <Card className="flex flex-row w-full max-w-4xl p-4 space-x-6 ">
           <CardContent className="flex-[1]  "></CardContent>
           <CardContent className="flex  flex-col justify-center max-w-md w-full space-y-3 py-3">
-            <Label>Name</Label>
-            <Input type="Text" placeholder="Name"></Input>
-            <Label>Email</Label>
-            <Input type="Text" placeholder="Email"></Input>
-            <Label>Password</Label>
-            <Input type="Password" placeholder="Password"></Input>
-            <Label>Confirm Password</Label>
-            <Input type="Password" placeholder="Confirm Password"></Input>
-            <div className="w-full flex flex-col items-center justify-center space-y-4 mt-3">
-              <Button>Register</Button>
-              <Link to={"/auth/login"}>
-                <Label>Already have an account?</Label>
-              </Link>
-            </div>
+            <form
+              onSubmit={handleRegister}
+              className="flex flex-col  space-y-3"
+            >
+              <Label>Name</Label>
+              <Input
+                type="Text"
+                placeholder="Name"
+                onChange={(e) => setName(e.target.value)}
+              ></Input>
+              <Label>Email</Label>
+              <Input
+                type="Text"
+                placeholder="Email"
+                onChange={(e) => setEmail(e.target.value)}
+              ></Input>
+              <Label>Password</Label>
+              <Input
+                type="Password"
+                placeholder="Password"
+                onChange={(e) => setPassword(e.target.value)}
+              ></Input>
+              <Label>Confirm Password</Label>
+              <Input
+                type="Password"
+                placeholder="Confirm Password"
+                onChange={(e) => setConfirmPass(e.target.value)}
+              ></Input>
+              <div className="w-full flex flex-col items-center justify-center space-y-4 mt-3">
+                <Button type="submit">Register</Button>
+                <Link to={"/auth/login"}>
+                  <Label>Already have an account?</Label>
+                </Link>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
