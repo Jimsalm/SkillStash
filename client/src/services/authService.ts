@@ -7,9 +7,15 @@ export interface User {
 }
 
 export const authService = {
-  registerUser: async (): Promise<User | undefined> => {
+  registerUser: async (userData: Partial<User>): Promise<User | undefined> => {
     try {
-      const response = await fetch(`${API_URL}/register`);
+      const response = await fetch(`${API_URL}/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userData }),
+      });
       const registeredData = await response.json();
 
       if (!registeredData) {
@@ -23,9 +29,15 @@ export const authService = {
     }
   },
 
-  loginUser: async (): Promise<User | undefined> => {
+  loginUser: async (userData: Partial<User>): Promise<User | undefined> => {
     try {
-      const response = await fetch(`${API_URL}/login`);
+      const response = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userData }),
+      });
       const loginData = await response.json();
 
       if (!loginData) {
@@ -38,4 +50,6 @@ export const authService = {
       return undefined;
     }
   },
+
+  getCurrentUser: async (): Promise<undefined> => {},
 };
