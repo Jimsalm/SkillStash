@@ -26,6 +26,7 @@ const Register = () => {
       return console.log("Password has to match");
     }
 
+    console.log("data to send: ", { name, email, password });
     const registeredData = await authService.registerUser({
       name,
       email,

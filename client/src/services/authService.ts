@@ -14,10 +14,10 @@ export const authService = {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ userData }),
+        body: JSON.stringify(userData),
       });
       const registeredData = await response.json();
-
+      console.log("Data Received", registeredData);
       if (!registeredData) {
         throw new Error(registeredData.message || "Error has occured");
       }
@@ -36,7 +36,7 @@ export const authService = {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ userData }),
+        body: JSON.stringify(userData),
       });
       const loginData = await response.json();
 
