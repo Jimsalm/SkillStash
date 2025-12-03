@@ -33,7 +33,7 @@ export const courseService = {
         throw new Error(data.message || "Failed to fetch courses");
       }
 
-      return data.data;
+      return data.data.filter((c: Course) => !c.isArchived);
     } catch (error) {
       console.error("Error fetching courses:", error);
       throw error;
@@ -48,7 +48,7 @@ export const courseService = {
       if (!data.success) {
         throw new Error(data.message || "Failed to fetch active courses");
       }
-      return data.data;
+      return data.data.filter((c: Course) => !c.isArchived);
     } catch (error) {
       console.error("Error fetching active courses:", error);
       throw error;

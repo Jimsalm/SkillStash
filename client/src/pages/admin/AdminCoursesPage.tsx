@@ -153,21 +153,6 @@ const filteredCourses = useMemo(() => {
     navigate(`/admin/courses/edit/${courseId}`);
   };
 
-  const handleDelete = async(courseId: string) => {
-    if (!confirm('Are you sure you want to delete this course?')){
-      return;
-    }
-
-    try {
-      await courseService.deleteCourse(courseId);
-      setCourses(courses.filter(c => c._id !== courseId));
-      console.log('Deleted course:', courseId);
-    } catch (error) {
-      alert('Failed to delete course');
-      console.error('Failed to delete course:', error);
-    }
-  };
-
   const handleArchive = async(courseId: string) => {
     if (!confirm('Are you sure you want to archive this course?')){
       return;
