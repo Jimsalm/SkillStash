@@ -54,6 +54,22 @@ router.get('/active', async (req: Request, res: Response) => {
     }
 });
 
+//GET /api/courses/archived - Get archived courses
+router.get('/archived', async (req: Request, res: Response) => {
+    try {
+        const courses = await Course.find({ isArchived: true }).sort({ createdAt: -1 });
+        res.json({ 
+            success: true, 
+            data: courses,
+            count: courses.length });
+    } catch (error) {
+        console.error('Error fetching archived courses:', error);
+        res.status(500).json({ 
+            message: 'Internal server error',
+            success: false });
+    }
+});
+
 // GET /api/courses/:id - Retrieve a single course by ID
 router.get('/:id', async (req: Request, res: Response) => {
     try {
@@ -195,104 +211,33 @@ router.patch('/:id/increment-claim', async (req: Request, res: Response) => {
     }
 });
 
-//GET /api/courses/stats/summary - Get course statistics
-router.get('/stats/summary', async (req: Request, res: Response) => {
+//PATCH /api/courses/:id/archive - Archive a course
+router.patch('/:id/archive', async (req: Request, res: Response) => {
     try {
-        const totalCourses = await Course.countDocuments();
-        const activeCourses = await Course.countDocuments({ isActive: true });
-        const totalClicks = await Course.aggregate([
-            { $group: { _id: null, total: { $sum: "$claimedCount" } } }
-        ]);
-        const coursebyCategory = await Course.aggregate([
-            { $group: { _id: "$category", count: { $sum: 1 } } },
-            { $sort: { count: -1 } }
-        ]);
+        const course = await Course.findById(req.params.id);
+        if (!course) {
+            return res.status(404).json({ 
+                message: 'Course not found',
+                success: false });
+        }
+        course.isArchived = !course.isArchived;
 
-        res.json({
-            success: true,
-            data: {
-                totalCourses,
-                activeCourses,
-                totalClicks: totalClicks[0]?.total || 0,
-                coursebyCategory
-            },
-            message: 'Course statistics fetched successfully'
-        });
+        if (course.isArchived) {
+            course.archivedAt = new Date();
+        } else {
+            course.archivedAt = undefined;
+        }
+        await course.save();
+        res.json({ 
+            success: true, 
+            data: course,
+            message: `Course has been ${course.isArchived ? 'archived' : 'unarchived'} successfully` });
     } catch (error) {
-        console.error('Error fetching course statistics:', error);
-        res.status(500).json({
+        console.error('Error toggling course archived status:', error);
+        res.status(500).json({ 
             message: 'Internal server error',
-            success: false
-        });
+            success: false });
     }
 });
-
-//GET /api/courses/stats/today - Get today stats
-router.get('/stats/today', async (req: Request, res: Response) =>{
-    try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const todayClaims = await Course.aggregate([
-            { $match: { claimedAt: { $gte: today, $lt: tomorrow } } },
-            { $group: { _id: null, total: { $sum: "$claimedCount" } } }
-        ]);
-
-        res.json({
-            success: true,
-            data: {
-                totalClaims: todayClaims[0]?.total || 0
-            },
-            message: 'Today stats fetched successfully'
-        });
-    } catch (error) {
-        console.error('Error fetching today stats:', error);
-        res.status(500).json({
-            message: 'Internal server error',
-            success: false
-        });
-    }
-})
-
-//GET /api/courses/top - Get top courses claim
-router.get('/top', async (req: Request, res: Response) => {
-    try {
-        const limit = parseInt(req.query.limit as string) || 5;
-        const topCourses = await Course.find({isActive: true}).sort({claimedCount: -1}).limit(limit).select('title claimedCount');
-        res.json({
-            success: true,
-            data: topCourses,
-            message: 'Top courses fetched successfully'
-        });
-    } catch (error) {
-        console.error('Error fetching top courses:', error);
-        res.status(500).json({
-            message: 'Internal server error',
-            success: false
-        });
-    }
-})
-
-//GET /api/courses/recent - Get recent courses
-router.get('/recent', async (req: Request, res: Response) => {
-    try {
-        const limit = parseInt(req.query.limit as string) || 5;
-        const recentCourses = await Course.find({isActive: true}).sort({createdAt: -1}).limit(limit).select('title createdAt expiresAt updatedAt');
-        res.json({
-            success: true,
-            data: recentCourses,
-            message: 'Recent courses fetched successfully'
-        });
-    } catch (error) {
-        console.error('Error fetching recent courses:', error);
-        res.status(500).json({
-            message: 'Internal server error',
-            success: false
-        });
-    }
-})
-
 
 export default router;

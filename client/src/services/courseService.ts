@@ -18,6 +18,8 @@ export interface Course {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  isArchived: boolean;
+  archivedAt: string;
 }
 
 export const courseService = {
@@ -170,6 +172,42 @@ export const courseService = {
       return data.data;
     } catch (error) {
       console.error("Error toggling course active status:", error);
+      throw error;
+    }
+  },
+
+  //Archive Course
+  archiveCourse: async (id: string): Promise<Course> => {
+    try {
+      const response = await fetch(`${API_URL}/courses/${id}/archive`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || "Failed to archive course");
+      }
+      return data.data;
+    } catch (error) {
+      console.error("Error archiving course:", error);
+      throw error;
+    }
+  },
+
+  //Get Archived Courses
+  getArchivedCourses: async (): Promise<Course[]> => {
+    try {
+      const response = await fetch(`${API_URL}/courses/archived`);
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.message || "Failed to fetch archived courses");
+      }
+      return data.data;
+    } catch (error) {
+      console.error("Error fetching archived courses:", error);
       throw error;
     }
   },

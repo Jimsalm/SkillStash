@@ -17,6 +17,8 @@ export interface ICourse extends Document {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  isArchived: boolean;
+  archivedAt?: Date;
 }
 
 const CourseSchema: Schema = new Schema(
@@ -79,6 +81,13 @@ const CourseSchema: Schema = new Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    isArchived: {
+      type: Boolean,
+      default: false,
+    },
+    archivedAt: {
+      type: Date,
     },
   },
   {

@@ -44,10 +44,11 @@ import {
   Loader2,
   AlertCircle,
   Archive,
+  ArchiveRestore,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-const AdminCoursesPage = () => {
+const AdminArchivedCoursesPage = () => {
   const navigate = useNavigate();
 
   const [courses, setCourses] = useState<Course[]>([]);
@@ -61,68 +62,63 @@ const AdminCoursesPage = () => {
   const [instructorFilter, setInstructorFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch courses on mount
+  // Fetch archived courses
   useEffect(() => {
-    fetchCourses();
+    fetchArchivedCourses();
   }, []);
 
-  const fetchCourses = async () => {
+  const fetchArchivedCourses = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await courseService.getAllCourses();
+      const data = await courseService.getArchivedCourses();
       setCourses(data || []);
     } catch (error: any) {
-      setError(error.message || 'Failed to fetch courses');
+      setError(error.message || 'Failed to fetch archived courses');
       setCourses([]);
     } finally {
       setLoading(false);
     }
-  }
-
-  // Get unique categories and instructors for filter options
-const categoryOptions = useMemo(() => {
-  if (!courses || courses.length === 0) return ['all'];
-  const categories = [...new Set(courses.map(c => c.category))];
-  return ['all', ...categories];
-}, [courses]);
-
-const instructorOptions = useMemo(() => {
-  if (!courses || courses.length === 0) return ['all'];
-  const instructors = [...new Set(courses.map(c => c.instructor))];
-  return ['all', ...instructors];
-}, [courses]);
-
-  // Check if course discount is active
-  const isCourseActive = (course: Course) => {
-    return course.isActive !== undefined ? course.isActive : Boolean(course.couponCode && course.couponCode.trim() !== '');
   };
 
-  /// Filter courses
-const filteredCourses = useMemo(() => {
-  if (!courses || courses.length === 0) return [];
-  
-  return courses.filter((course) => {
-    const matchesSearch = 
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.couponCode?.toLowerCase().includes(searchQuery.toLowerCase());
+  //categories and instructors filter options
+  const categoryOptions = useMemo(() => {
+    if (!courses || courses.length === 0) return ['all'];
+    const categories = [...new Set(courses.map(c => c.category))];
+    return ['all', ...categories];
+  }, [courses]);
+
+  const instructorOptions = useMemo(() => {
+    if (!courses || courses.length === 0) return ['all'];
+    const instructors = [...new Set(courses.map(c => c.instructor))];
+    return ['all', ...instructors];
+  }, [courses]);
+
+  // Filter courses
+  const filteredCourses = useMemo(() => {
+    if (!courses || courses.length === 0) return [];
     
-    const matchesStatus = 
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && isCourseActive(course)) ||
-      (statusFilter === 'inactive' && !isCourseActive(course));
+    return courses.filter((course) => {
+      const matchesSearch = 
+        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.couponCode?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = 
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && course.isActive) ||
+        (statusFilter === 'inactive' && !course.isActive);
 
-    const matchesCategory = 
-      categoryFilter === 'all' || course.category === categoryFilter;
+      const matchesCategory = 
+        categoryFilter === 'all' || course.category === categoryFilter;
 
-    const matchesInstructor = 
-      instructorFilter === 'all' || course.instructor === instructorFilter;
+      const matchesInstructor = 
+        instructorFilter === 'all' || course.instructor === instructorFilter;
 
-    return matchesSearch && matchesStatus && matchesCategory && matchesInstructor;
-  });
-}, [courses, searchQuery, statusFilter, categoryFilter, instructorFilter]);
+      return matchesSearch && matchesStatus && matchesCategory && matchesInstructor;
+    });
+  }, [courses, searchQuery, statusFilter, categoryFilter, instructorFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredCourses.length / pageSize);
@@ -130,7 +126,6 @@ const filteredCourses = useMemo(() => {
   const endIndex = startIndex + pageSize;
   const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
 
-  // Reset to page 1 when filters change
   const handleFilterChange = () => {
     setCurrentPage(1);
   };
@@ -148,13 +143,23 @@ const filteredCourses = useMemo(() => {
     setCurrentPage(1);
   };
 
-  const handleEdit = (courseId: string) => {
-    console.log('Edit course:', courseId);
-    navigate(`/admin/courses/edit/${courseId}`);
+  const handleUnarchive = async (courseId: string) => {
+    if (!confirm('Are you sure you want to unarchive this course?')) {
+      return;
+    }
+
+    try {
+      const updatedCourse = await courseService.archiveCourse(courseId);
+      setCourses(courses.filter(c => c._id !== courseId));
+      console.log('Unarchived course:', courseId);
+    } catch (error) {
+      alert('Failed to unarchive course');
+      console.error('Failed to unarchive course:', error);
+    }
   };
 
-  const handleDelete = async(courseId: string) => {
-    if (!confirm('Are you sure you want to delete this course?')){
+  const handleDelete = async (courseId: string) => {
+    if (!confirm('Are you sure you want to delete this course permanently?')) {
       return;
     }
 
@@ -168,52 +173,36 @@ const filteredCourses = useMemo(() => {
     }
   };
 
-  const handleArchive = async(courseId: string) => {
-    if (!confirm('Are you sure you want to archive this course?')){
-      return;
-    }
-
-    try {
-      const updatedCourse = await courseService.archiveCourse(courseId);
-      setCourses(courses.map(c => c._id === courseId ? updatedCourse : c));
-      console.log('Archived course:', courseId);
-    } catch (error) {
-      alert('Failed to archive course');
-      console.error('Failed to archive course:', error);
-    }
-  };
-  
-
   const handleNavigate = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || categoryFilter !== 'all' || instructorFilter !== 'all';
 
-  if(loading){
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading courses...</p>
+          <p className="text-muted-foreground">Loading archived courses...</p>
         </div>
       </div>
     );
   }
 
-  if(error){
+  if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen p-4">
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <p className="font-semibold mb-2">Failed to load courses</p>
+            <p className="font-semibold mb-2">Failed to load archived courses</p>
             <p className="text-sm">{error}</p>
             <Button 
               variant="outline" 
               size="sm" 
               className="mt-4"
-              onClick={fetchCourses}
+              onClick={fetchArchivedCourses}
             >
               Try Again
             </Button>
@@ -228,9 +217,9 @@ const filteredCourses = useMemo(() => {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">All Courses</h1>
+          <h1 className="text-3xl font-bold">Archived Courses</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage and view all courses • {filteredCourses.length} total
+            Manage archived courses • {filteredCourses.length} total
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -243,9 +232,8 @@ const filteredCourses = useMemo(() => {
             Filters
           </Button>
           <Button asChild>
-            <a href="/admin/add-course">
-              <Plus className="h-4 w-4" />
-              Add New Course
+            <a href="/admin/courses">
+              View Active Courses
             </a>
           </Button>
         </div>
@@ -269,7 +257,7 @@ const filteredCourses = useMemo(() => {
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input 
-                    placeholder="Search courses..." 
+                    placeholder="Search archived courses..." 
                     className="pl-8" 
                     value={searchQuery} 
                     onChange={(e) => handleSearchChange(e.target.value)} 
@@ -345,9 +333,8 @@ const filteredCourses = useMemo(() => {
               <TableHead>Course</TableHead>
               <TableHead>Instructor</TableHead>
               <TableHead>Category</TableHead>
-              <TableHead>Coupon Code</TableHead>
+              <TableHead>Archived Date</TableHead>
               <TableHead>Claimed</TableHead>
-              <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -380,27 +367,13 @@ const filteredCourses = useMemo(() => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {course.couponCode ? (
-                      <code className="text-xs bg-secondary px-2 py-1 rounded font-mono">
-                        {course.couponCode}
-                      </code>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">No coupon</span>
-                    )}
+                    {course.archivedAt ? new Date(course.archivedAt).toLocaleDateString() : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <span className="font-medium">{course.claimedCount.toLocaleString()}</span>
                       <span className="text-xs text-muted-foreground">claims</span>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant={isCourseActive(course) ? "default" : "secondary"}
-                      className={isCourseActive(course) ? "bg-green-500 hover:bg-green-600" : ""}
-                    >
-                      {isCourseActive(course) ? 'Active' : 'Inactive'}
-                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -411,9 +384,9 @@ const filteredCourses = useMemo(() => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(course._id)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
+                        <DropdownMenuItem onClick={() => handleUnarchive(course._id)}>
+                          <ArchiveRestore className="h-4 w-4 mr-2" />
+                          Unarchive
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleNavigate(course.udemyUrl)}>
                           <ExternalLink className="h-4 w-4 mr-2" />
@@ -421,11 +394,11 @@ const filteredCourses = useMemo(() => {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
-                          onClick={() => handleArchive(course._id)}
+                          onClick={() => handleDelete(course._id)}
                           className="text-destructive focus:text-destructive"
                         >
-                          <Archive className="h-4 w-4 mr-2" />
-                          Archive
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -434,9 +407,10 @@ const filteredCourses = useMemo(() => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   <div className="flex flex-col items-center gap-2">
-                    <p className="text-muted-foreground">No courses found</p>
+                    <Archive className="h-10 w-10 text-muted-foreground" />
+                    <p className="text-muted-foreground">No archived courses found</p>
                     {hasActiveFilters && (
                       <Button
                         variant="link"
@@ -540,4 +514,4 @@ const filteredCourses = useMemo(() => {
   );
 };
 
-export default AdminCoursesPage;
+export default AdminArchivedCoursesPage;

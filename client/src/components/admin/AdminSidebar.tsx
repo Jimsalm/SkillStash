@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, PlusCircle, LogOut, BookMarked, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, BookOpen, PlusCircle, LogOut, BookMarked, Sun, Moon, Archive } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/theme-provider';
@@ -12,6 +12,7 @@ const AdminSidebar = () => {
     { to: '/admin/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/admin/courses', label: 'All Courses', icon: BookOpen },
     { to: '/admin/courses/add', label: 'Add New Course', icon: PlusCircle },
+    { to: '/admin/courses/archived', label: 'Archived Courses', icon: Archive },
   ];
 
   return (
