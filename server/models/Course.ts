@@ -82,7 +82,7 @@ const CourseSchema: Schema = new Schema(
     },
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt
+    timestamps: true,
   }
 );
 

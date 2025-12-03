@@ -3,64 +3,64 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Users, TrendingUp, Tag, Clock, Award, Activity, ArrowUpRight, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from 'react';
+import { dashboardService } from '@/services/dashboardService';
+import type { DashboardStats, ActivityItem, TopCourse } from '@/services/dashboardService';
 
-// Mock data - in a real app, you'd fetch this from your API
-const stats = [
-  {
-    title: 'Total Courses',
-    value: '1,245',
-    change: '+12%',
-    trend: 'up',
-    icon: BookOpen,
-    bgColor: 'bg-blue-500/10',
-    iconColor: 'text-blue-600 dark:text-blue-400',
-  },
-  {
-    title: 'Active Coupons',
-    value: '847',
-    change: '+5%',
-    trend: 'up',
-    icon: Tag,
-    bgColor: 'bg-green-500/10',
-    iconColor: 'text-green-600 dark:text-green-400',
-  },
-  {
-    title: 'Total Users',
-    value: '5,432',
-    change: '+20%',
-    trend: 'up',
-    icon: Users,
-    bgColor: 'bg-purple-500/10',
-    iconColor: 'text-purple-600 dark:text-purple-400',
-  },
-  {
-    title: 'Claimed Today',
-    value: '123',
-    change: '0%',
-    trend: 'neutral',
-    icon: TrendingUp,
-    bgColor: 'bg-orange-500/10',
-    iconColor: 'text-orange-600 dark:text-orange-400',
-  },
-];
 
-const recentActivity = [
-  { id: 1, action: 'New course added', course: 'Advanced React Patterns', time: '5 min ago', type: 'default' },
-  { id: 2, action: 'Course updated', course: 'Python for Beginners', time: '1 hour ago', type: 'secondary' },
-  { id: 3, action: 'Coupon expired', course: 'Web Design Masterclass', time: '2 hours ago', type: 'outline' },
-  { id: 4, action: 'New enrollment', course: 'JavaScript Essentials', time: '3 hours ago', type: 'default' },
-  { id: 5, action: 'Course deleted', course: 'Old PHP Tutorial', time: '5 hours ago', type: 'destructive' },
-];
 
-const topCourses = [
-  { id: 1, title: 'Complete Web Development Bootcamp', claims: 1234, rating: 4.8, trend: '+15%' },
-  { id: 2, title: 'Machine Learning A-Z', claims: 987, rating: 4.9, trend: '+22%' },
-  { id: 3, title: 'React - The Complete Guide', claims: 856, rating: 4.7, trend: '+8%' },
-  { id: 4, title: 'Python Data Science', claims: 743, rating: 4.6, trend: '+12%' },
-  { id: 5, title: 'UI/UX Design Fundamentals', claims: 621, rating: 4.8, trend: '+18%' },
-];
 
 const AdminDashboardPage = () => {
+    const [stats, setStats] = useState<DashboardStats[]>([]);
+    const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+    const [topCourses, setTopCourses] = useState<TopCourse[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                const [statsData, recentActivityData, topCoursesData] = await Promise.all([
+                    dashboardService.getDashboardStats(),
+                    dashboardService.getRecentActivity(),
+                    dashboardService.getTopCourses()
+                ]);
+                setStats(statsData);
+                setRecentActivity(recentActivityData);
+                setTopCourses(topCoursesData);
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+                setError("Failed to fetch dashboard data");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDashboardData();
+    }, []);
+
+      if (loading) {
+        return (
+          <div className="flex items-center justify-center h-screen">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
+            </div>
+          </div>
+        );
+      }
+
+      if (error) {
+        return (
+          <div className="flex items-center justify-center h-screen">
+            <div className="text-center">
+              <p className="text-red-500 mb-4">Error: {error}</p>
+              <Button onClick={() => window.location.reload()}>Try Again</Button>
+            </div>
+          </div>
+        );
+      }
+
   return (
     <div className="space-y-6 p-12 overflow-y-auto">
       {/* Header */}
@@ -77,29 +77,32 @@ const AdminDashboardPage = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <Card key={index} className="transition-all hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`h-5 w-5 ${stat.iconColor}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <div className="flex items-center gap-1 mt-1">
-                <span className={`text-xs font-medium ${
-                  stat.trend === 'up' ? 'text-green-600 dark:text-green-400' : 
-                  stat.trend === 'down' ? 'text-red-600 dark:text-red-400' : 
-                  'text-muted-foreground'
-                }`}>
-                  {stat.change}
-                </span>
-                <span className="text-xs text-muted-foreground">from last month</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {stats.map((stat, index) => {
+          const IconComponent = stat.icon;
+          return (
+            <Card key={index} className="transition-all hover:shadow-md">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                  <IconComponent className={`h-5 w-5 ${stat.iconColor}`} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className={`text-xs font-medium ${
+                    stat.trend === 'up' ? 'text-green-600 dark:text-green-400' : 
+                    stat.trend === 'down' ? 'text-red-600 dark:text-red-400' : 
+                    'text-muted-foreground'
+                  }`}>
+                    {stat.change}
+                  </span>
+                  <span className="text-xs text-muted-foreground">from last month</span>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Main Content Grid */}
