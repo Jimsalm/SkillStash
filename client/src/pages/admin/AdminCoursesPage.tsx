@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchCourses, archiveCourse, type Course } from '@/api/courseApi';
 import { useNavigate } from 'react-router-dom';
-import { courseService } from '@/services/courseService';
-import type { Course } from '@/services/courseService';
 import {
   Table,
   TableBody,
@@ -46,13 +46,12 @@ import {
   Archive,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 
 const AdminCoursesPage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,74 +60,61 @@ const AdminCoursesPage = () => {
   const [instructorFilter, setInstructorFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch courses on mount
-  useEffect(() => {
-    fetchCourses();
-  }, []);
+  const { data: allCoursesForFilters } = useQuery<Course[], Error>({
+    queryKey: ['courses', 'all-for-filters'],
+    queryFn: () => fetchCourses(),
+  }) 
 
-  const fetchCourses = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await courseService.getAllCourses();
-      setCourses(data || []);
-    } catch (error: any) {
-      setError(error.message || 'Failed to fetch courses');
-      setCourses([]);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { data: courses, isLoading, error, refetch } = useQuery({
+    queryKey: ['courses', 'admin', { searchQuery, statusFilter, categoryFilter, instructorFilter }],
+    queryFn: () => {
+      const params: any = {};
+      if (statusFilter !== 'all') params.isActive = statusFilter === 'active';
+      if (categoryFilter !== 'all') params.category = categoryFilter;
+      if (instructorFilter !== 'all') params.instructor = instructorFilter;
+      if (searchQuery) params.search = searchQuery;
+      return fetchCourses(params);
+    },
+    select: (data) => data.filter(course => !course.isArchived && (instructorFilter === 'all' || course.instructor === instructorFilter)),
+  });
 
-  // Get unique categories and instructors for filter options
+  const archiveMutation = useMutation<Course, Error, string>({
+    mutationFn: archiveCourse,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['courses'],
+      });
+      toast.success('Course archived successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to archive course');
+      console.error('Failed to archive course:', error);
+    },
+  });
+
+  //for filter options
 const categoryOptions = useMemo(() => {
-  if (!courses || courses.length === 0) return ['all'];
-  const categories = [...new Set(courses.map(c => c.category))];
-  return ['all', ...categories];
-}, [courses]);
+  if (!allCoursesForFilters || allCoursesForFilters.length === 0) return ['all'];
+  const categories = [...new Set(allCoursesForFilters.map(c => c.category))];
+  return ['all', ...categories.sort()];
+}, [allCoursesForFilters]);
 
 const instructorOptions = useMemo(() => {
-  if (!courses || courses.length === 0) return ['all'];
-  const instructors = [...new Set(courses.map(c => c.instructor))];
-  return ['all', ...instructors];
-}, [courses]);
+  if (!allCoursesForFilters || allCoursesForFilters.length === 0) return ['all'];
+  const instructors = [...new Set(allCoursesForFilters.map(c => c.instructor))];
+  return ['all', ...instructors.sort()];
+}, [allCoursesForFilters]);
 
   // Check if course discount is active
   const isCourseActive = (course: Course) => {
     return course.isActive !== undefined ? course.isActive : Boolean(course.couponCode && course.couponCode.trim() !== '');
   };
 
-  /// Filter courses
-const filteredCourses = useMemo(() => {
-  if (!courses || courses.length === 0) return [];
-  
-  return courses.filter((course) => {
-    const matchesSearch = 
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.couponCode?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesStatus = 
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && isCourseActive(course)) ||
-      (statusFilter === 'inactive' && !isCourseActive(course));
-
-    const matchesCategory = 
-      categoryFilter === 'all' || course.category === categoryFilter;
-
-    const matchesInstructor = 
-      instructorFilter === 'all' || course.instructor === instructorFilter;
-
-    return matchesSearch && matchesStatus && matchesCategory && matchesInstructor;
-  });
-}, [courses, searchQuery, statusFilter, categoryFilter, instructorFilter]);
-
   // Pagination
-  const totalPages = Math.ceil(filteredCourses.length / pageSize);
+  const totalPages = Math.ceil((courses?.length || 0) / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
+  const paginatedCourses = courses?.slice(startIndex, endIndex) || [];
 
   // Reset to page 1 when filters change
   const handleFilterChange = () => {
@@ -157,15 +143,7 @@ const filteredCourses = useMemo(() => {
     if (!confirm('Are you sure you want to archive this course?')){
       return;
     }
-
-    try {
-      const updatedCourse = await courseService.archiveCourse(courseId);
-      setCourses(courses.map(c => c._id === courseId ? updatedCourse : c));
-      console.log('Archived course:', courseId);
-    } catch (error) {
-      alert('Failed to archive course');
-      console.error('Failed to archive course:', error);
-    }
+    archiveMutation.mutate(courseId);
   };
   
 
@@ -175,7 +153,7 @@ const filteredCourses = useMemo(() => {
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || categoryFilter !== 'all' || instructorFilter !== 'all';
 
-  if(loading){
+  if(isLoading){
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -193,12 +171,12 @@ const filteredCourses = useMemo(() => {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             <p className="font-semibold mb-2">Failed to load courses</p>
-            <p className="text-sm">{error}</p>
+            <p className="text-sm">{error.message}</p>
             <Button 
               variant="outline" 
               size="sm" 
               className="mt-4"
-              onClick={fetchCourses}
+              onClick={() => refetch()}
             >
               Try Again
             </Button>
@@ -215,7 +193,7 @@ const filteredCourses = useMemo(() => {
         <div>
           <h1 className="text-3xl font-bold">All Courses</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage and view all courses • {filteredCourses.length} total
+            Manage and view all courses • {courses?.length || 0} total
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -408,6 +386,7 @@ const filteredCourses = useMemo(() => {
                         <DropdownMenuItem 
                           onClick={() => handleArchive(course._id)}
                           className="text-destructive focus:text-destructive"
+                          disabled={archiveMutation.isPending}
                         >
                           <Archive className="h-4 w-4 mr-2" />
                           Archive
@@ -440,12 +419,12 @@ const filteredCourses = useMemo(() => {
       </div>
 
       {/* Pagination */}
-      {filteredCourses.length > 0 && (
+      {courses && courses.length > 0 && (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-            <span className="font-medium">{Math.min(endIndex, filteredCourses.length)}</span> of{' '}
-            <span className="font-medium">{filteredCourses.length}</span> courses
+            <span className="font-medium">{Math.min(endIndex, courses.length)}</span> of{' '}
+            <span className="font-medium">{courses.length}</span> courses
           </p>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
