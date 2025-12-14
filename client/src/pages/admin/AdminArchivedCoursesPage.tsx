@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchArchivedCourses, archiveCourse, deleteCourse, type Course } from '@/api/courseApi';
 import { useNavigate } from 'react-router-dom';
-import { courseService } from '@/services/courseService';
-import type { Course } from '@/services/courseService';
 import {
   Table,
   TableBody,
@@ -47,13 +47,12 @@ import {
   ArchiveRestore,
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 
 const AdminArchivedCoursesPage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,69 +61,86 @@ const AdminArchivedCoursesPage = () => {
   const [instructorFilter, setInstructorFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Fetch archived courses
-  useEffect(() => {
-    fetchArchivedCourses();
-  }, []);
+  //get all archived courses for filters
+  const { data: allArchivedCoursesForFilters } = useQuery<Course[], Error>({
+    queryKey: ['courses', 'archived', 'for-filters'],
+    queryFn: () => fetchArchivedCourses(),
+  });
 
-  const fetchArchivedCourses = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await courseService.getArchivedCourses();
-      setCourses(data || []);
-    } catch (error: any) {
-      setError(error.message || 'Failed to fetch archived courses');
-      setCourses([]);
-    } finally {
-      setLoading(false);
+  //get archived courses
+  const { data: courses, isLoading, error, refetch } = useQuery<Course[], Error>({
+    queryKey: ['courses', 'archived', { searchQuery, statusFilter, categoryFilter, instructorFilter }],
+    queryFn: () => fetchArchivedCourses(),
+    select: (data) => {
+      return data.filter((course) => {
+        const matchesSearch = 
+          course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          course.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          course.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          course.couponCode?.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        const matchesStatus = 
+          statusFilter === 'all' ||
+          (statusFilter === 'active' && course.isActive) ||
+          (statusFilter === 'inactive' && !course.isActive);
+
+        const matchesCategory = 
+          categoryFilter === 'all' || course.category === categoryFilter;
+
+        const matchesInstructor = 
+          instructorFilter === 'all' || course.instructor === instructorFilter;
+
+        return matchesSearch && matchesStatus && matchesCategory && matchesInstructor;
+      });
     }
-  };
+  });
 
-  //categories and instructors filter options
+  //unarchive course mutation
+  const unarchiveCourse = useMutation<Course, Error, string>({
+    mutationFn: archiveCourse,
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      toast.success('Course unarchived successfully');
+    },
+    onError: (error) => {
+      console.error('Failed to unarchive course:', error);
+      toast.error('Failed to unarchive course');
+    }
+  });
+
+  //delete course mutation
+  const deleteMutation = useMutation<void, Error, string>({
+    mutationFn: deleteCourse,
+    onSuccess: () => {
+      refetch();
+      queryClient.invalidateQueries({ queryKey: ['courses', 'archived'] });
+      toast.success('Course deleted permanently');
+    },
+    onError: (error) => {
+      console.error('Failed to delete course:', error);
+      toast.error('Failed to delete course');
+    }
+  });
+
+  //filter options
   const categoryOptions = useMemo(() => {
-    if (!courses || courses.length === 0) return ['all'];
-    const categories = [...new Set(courses.map(c => c.category))];
-    return ['all', ...categories];
-  }, [courses]);
+    if (!allArchivedCoursesForFilters || allArchivedCoursesForFilters.length === 0) return ['all'];
+    const categories = [...new Set(allArchivedCoursesForFilters.map(c => c.category))];
+    return ['all', ...categories.sort()];
+  }, [allArchivedCoursesForFilters]);
 
   const instructorOptions = useMemo(() => {
-    if (!courses || courses.length === 0) return ['all'];
-    const instructors = [...new Set(courses.map(c => c.instructor))];
-    return ['all', ...instructors];
-  }, [courses]);
+    if (!allArchivedCoursesForFilters || allArchivedCoursesForFilters.length === 0) return ['all'];
+    const instructors = [...new Set(allArchivedCoursesForFilters.map(c => c.instructor))];
+    return ['all', ...instructors.sort()];
+  }, [allArchivedCoursesForFilters]);
 
-  // Filter courses
-  const filteredCourses = useMemo(() => {
-    if (!courses || courses.length === 0) return [];
-    
-    return courses.filter((course) => {
-      const matchesSearch = 
-        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.couponCode?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesStatus = 
-        statusFilter === 'all' ||
-        (statusFilter === 'active' && course.isActive) ||
-        (statusFilter === 'inactive' && !course.isActive);
-
-      const matchesCategory = 
-        categoryFilter === 'all' || course.category === categoryFilter;
-
-      const matchesInstructor = 
-        instructorFilter === 'all' || course.instructor === instructorFilter;
-
-      return matchesSearch && matchesStatus && matchesCategory && matchesInstructor;
-    });
-  }, [courses, searchQuery, statusFilter, categoryFilter, instructorFilter]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredCourses.length / pageSize);
+  //pagination
+  const totalPages = Math.ceil((courses?.length || 0) / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
+  const paginatedCourses = courses?.slice(startIndex, endIndex) || [];
 
   const handleFilterChange = () => {
     setCurrentPage(1);
@@ -148,14 +164,7 @@ const AdminArchivedCoursesPage = () => {
       return;
     }
 
-    try {
-      const updatedCourse = await courseService.archiveCourse(courseId);
-      setCourses(courses.filter(c => c._id !== courseId));
-      console.log('Unarchived course:', courseId);
-    } catch (error) {
-      alert('Failed to unarchive course');
-      console.error('Failed to unarchive course:', error);
-    }
+    unarchiveCourse.mutate(courseId);
   };
 
   const handleDelete = async (courseId: string) => {
@@ -163,14 +172,7 @@ const AdminArchivedCoursesPage = () => {
       return;
     }
 
-    try {
-      await courseService.deleteCourse(courseId);
-      setCourses(courses.filter(c => c._id !== courseId));
-      console.log('Deleted course:', courseId);
-    } catch (error) {
-      alert('Failed to delete course');
-      console.error('Failed to delete course:', error);
-    }
+    deleteMutation.mutate(courseId);
   };
 
   const handleNavigate = (url: string) => {
@@ -179,7 +181,7 @@ const AdminArchivedCoursesPage = () => {
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || categoryFilter !== 'all' || instructorFilter !== 'all';
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -197,12 +199,12 @@ const AdminArchivedCoursesPage = () => {
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             <p className="font-semibold mb-2">Failed to load archived courses</p>
-            <p className="text-sm">{error}</p>
+            <p className="text-sm">{error.message}</p>
             <Button 
               variant="outline" 
               size="sm" 
               className="mt-4"
-              onClick={fetchArchivedCourses}
+              onClick={() => refetch()}
             >
               Try Again
             </Button>
@@ -219,7 +221,7 @@ const AdminArchivedCoursesPage = () => {
         <div>
           <h1 className="text-3xl font-bold">Archived Courses</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage archived courses • {filteredCourses.length} total
+            Manage archived courses • {courses?.length || 0} total
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -429,12 +431,12 @@ const AdminArchivedCoursesPage = () => {
       </div>
 
       {/* Pagination */}
-      {filteredCourses.length > 0 && (
+      {courses && courses?.length > 0 && (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-            <span className="font-medium">{Math.min(endIndex, filteredCourses.length)}</span> of{' '}
-            <span className="font-medium">{filteredCourses.length}</span> courses
+            <span className="font-medium">{Math.min(endIndex, courses.length)}</span> of{' '}
+            <span className="font-medium">{courses.length}</span> courses
           </p>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
