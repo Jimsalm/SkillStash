@@ -45,7 +45,7 @@ router.get('/stats/today', async (req: Request, res: Response) =>{
         tomorrow.setDate(tomorrow.getDate() + 1);
 
         const todayClaims = await Course.aggregate([
-            { $match: { claimedAt: { $gte: today, $lt: tomorrow } } },
+            { $match: { updatedAt: { $gte: today, $lt: tomorrow } } },
             { $group: { _id: null, total: { $sum: "$claimedCount" } } }
         ]);
 

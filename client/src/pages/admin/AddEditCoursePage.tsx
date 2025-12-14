@@ -74,12 +74,14 @@ const AddEditCoursePage = () => {
     },
   });
 
+  //Fetch course data
   const { data: courseData, isLoading, error } = useQuery<Course, Error>({
     queryKey: ['course', id],
     queryFn: () => fetchCourseById(id!),
     enabled: isEditMode && !!id,
   });
 
+  //Reset form on course data change
   useEffect(() => {
     if (courseData) {
       let formattedDate = '';
@@ -107,6 +109,7 @@ const AddEditCoursePage = () => {
     }
   }, [courseData, form]);
 
+  //Submit mutation
   const submitMutation = useMutation<Course, Error, CourseFormValues>({
     mutationFn: async (values) =>{
       const softwareArray = values.software.split(',').map(s => s.trim()).filter(Boolean);
@@ -151,6 +154,7 @@ const AddEditCoursePage = () => {
     submitMutation.mutate(values);
   }
 
+  //Software preview
   const [softwarePreview, setSoftwarePreview] = useState<string[]>([]);
   const selectedCategory = form.watch('category');
   const softwareInput = form.watch('software');
@@ -166,9 +170,11 @@ const AddEditCoursePage = () => {
     }
   }, [softwareInput]);
 
+  //Available subcategories
   const availableSubcategories = categoriesData
   .find((c) => c.name === selectedCategory)?.subcategories || [];
 
+  //Savings calculation
   const savings = originalPrice > 0 && discountedPrice > 0 ? 
     Math.round(((originalPrice - discountedPrice) / originalPrice) * 100) : 0;
 

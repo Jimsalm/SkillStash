@@ -3,63 +3,63 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Users, TrendingUp, Tag, Clock, Award, Activity, ArrowUpRight, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useEffect, useState } from 'react';
-import { dashboardService } from '@/services/dashboardService';
-import type { DashboardStats, ActivityItem, TopCourse } from '@/services/dashboardService';
-
-
+import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import { getDashboardStats, getRecentActivity, getTopCourses } from '@/api/dashboardApi';
+import type { DashboardStats, ActivityItem, TopCourse } from '@/api/dashboardApi';
+import { Alert, AlertDescription } from '@/components/ui/alert'; 
+import { AlertCircle } from 'lucide-react';
 
 
 const AdminDashboardPage = () => {
-    const [stats, setStats] = useState<DashboardStats[]>([]);
-    const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
-    const [topCourses, setTopCourses] = useState<TopCourse[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                setLoading(true);
-                const [statsData, recentActivityData, topCoursesData] = await Promise.all([
-                    dashboardService.getDashboardStats(),
-                    dashboardService.getRecentActivity(),
-                    dashboardService.getTopCourses()
-                ]);
-                setStats(statsData);
-                setRecentActivity(recentActivityData);
-                setTopCourses(topCoursesData);
-            } catch (error) {
-                console.error("Error fetching dashboard data:", error);
-                setError("Failed to fetch dashboard data");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchDashboardData();
-    }, []);
+  //Dashboard Stats
+  const { data: stats, isLoading: statsLoading, error: statsError} = useQuery<DashboardStats[], Error>({
+    queryKey: ['dashboard', 'stats'],
+    queryFn: getDashboardStats,
+  });
 
-      if (loading) {
-        return (
-          <div className="flex items-center justify-center h-screen">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
-            </div>
+  //Recent Activity
+  const { data: recentActivity, isLoading: activityLoading, error: activityError} = useQuery<ActivityItem[], Error>({
+    queryKey: ['dashboard', 'recent-activity', ],
+    queryFn: getRecentActivity,
+  });
+
+  //Top Courses
+  const { data: topCourses, isLoading: coursesLoading, error: coursesError} = useQuery<TopCourse[], Error>({
+    queryKey: ['dashboard', 'top-courses'],
+    queryFn: getTopCourses,
+  });
+
+  const isLoading = statsLoading || activityLoading || coursesLoading;
+  const error = statsError || activityError || coursesError;
+
+  if(isLoading){
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+      return (
+        <div className="flex items-center justify-center h-screen p-4">
+          <Alert variant="destructive" className="max-w-md">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <p className="font-semibold mb-2">Failed to load dashboard</p>
+              <p className="text-sm">{error.message}</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+                  </AlertDescription>
+              </Alert>
           </div>
-        );
-      }
-
-      if (error) {
-        return (
-          <div className="flex items-center justify-center h-screen">
-            <div className="text-center">
-              <p className="text-red-500 mb-4">Error: {error}</p>
-              <Button onClick={() => window.location.reload()}>Try Again</Button>
-            </div>
-          </div>
-        );
-      }
+      );
+  }
 
   return (
     <div className="space-y-6 p-12 overflow-y-auto">
@@ -77,7 +77,7 @@ const AdminDashboardPage = () => {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => {
+        {stats?.map((stat, index) => {
           const IconComponent = stat.icon;
           return (
             <Card key={index} className="transition-all hover:shadow-md">
@@ -120,7 +120,7 @@ const AdminDashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity) => (
+              {recentActivity?.map((activity) => (
                 <div key={activity.id} className="flex items-start gap-3 pb-3 border-b last:border-0 last:pb-0">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -151,7 +151,7 @@ const AdminDashboardPage = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {topCourses.map((course, index) => (
+              {topCourses?.map((course, index) => (
                 <div key={course.id} className="flex items-center gap-3 pb-3 border-b last:border-0 last:pb-0">
                   <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm flex-shrink-0">
                     {index + 1}
