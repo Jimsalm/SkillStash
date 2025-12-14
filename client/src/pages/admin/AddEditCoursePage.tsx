@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { courseService } from '@/services/courseService';
-import type { Course } from '@/services/courseService';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { fetchCourseById, createCourse, updateCourse, type Course } from '@/api/courseApi';
 import {
   Form,
   FormControl,
@@ -46,18 +46,13 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { courseFormSchema, categoriesData } from '@/lib/schemas/courseFormSchema';
 import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
+import { toast } from 'sonner';
 
 const AddEditCoursePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditMode = Boolean(id);
   const [activeTab, setActiveTab] = useState('basic-info');
-
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [softwarePreview, setSoftwarePreview] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
@@ -79,78 +74,42 @@ const AddEditCoursePage = () => {
     },
   });
 
-  useEffect(() => {
-    if (isEditMode && id) {
-      fetchCourseData(id);
-    }
-  }, [id, isEditMode]);
+  const { data: courseData, isLoading, error } = useQuery<Course, Error>({
+    queryKey: ['course', id],
+    queryFn: () => fetchCourseById(id!),
+    enabled: isEditMode && !!id,
+  });
 
-  const fetchCourseData = async (courseId: string) => {
-    setLoading(true);
-    setFetchError(null);
-    try {
-      const course = await courseService.getCourseById(courseId);
+  useEffect(() => {
+    if (courseData) {
       let formattedDate = '';
-      if (course.expiresAt){
-        const date = new Date(course.expiresAt);
+      if (courseData.expiresAt) {
+        const date = new Date(courseData.expiresAt);
         formattedDate = date.toISOString().split('T')[0];
       }
 
       form.reset({
-        title: course.title,
-        description: course.description,
-        instructor: course.instructor,
-        software: course.software.join(', '),
-        originalPrice: course.originalPrice,
-        discountedPrice: course.discountedPrice,
-        claimedCount: course.claimedCount,
-        image: course.image,
-        udemyUrl: course.udemyUrl,
-        couponCode: course.couponCode,
-        expiresAt: formattedDate,
-        category: course.category,
-        subcategory: course.subcategory,
-        isActive: course.isActive,
+        title: courseData.title,
+        description: courseData.description,
+        instructor: courseData.instructor,
+        software: courseData.software.join(', '),
+        originalPrice: courseData.originalPrice,
+        discountedPrice: courseData.discountedPrice,
+        claimedCount: courseData.claimedCount,
+        image: courseData.image,
+        udemyUrl: courseData.udemyUrl,
+        couponCode: courseData.couponCode,
+        expiresAt: courseData.expiresAt,
+        category: courseData.category,
+        subcategory: courseData.subcategory,
+        isActive: courseData.isActive,
       });
-
-      setSoftwarePreview(course.software);
-    } catch (error: any) {
-      console.error('Error fetching course data:', error);
-      setFetchError(error.message);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [courseData, form]);
 
-  const selectedCategory = form.watch('category');
-  const softwareInput = form.watch('software');
-  const originalPrice = form.watch('originalPrice');
-  const discountedPrice = form.watch('discountedPrice');
-
-  // Update software preview when input changes
-  useEffect(() => {
-    if (softwareInput) {
-      const techs = softwareInput.split(',').map((t: string) => t.trim()).filter(Boolean);
-      setSoftwarePreview(techs);
-    } else {
-      setSoftwarePreview([]);
-    }
-  }, [softwareInput]);
-
-  const availableSubcategories = categoriesData
-    .find((cat) => cat.name === selectedCategory)?.subcategories || [];
-
-  // Calculate savings
-  const savings = originalPrice > 0 && discountedPrice > 0 
-    ? Math.round(((Number(originalPrice) - Number(discountedPrice)) / Number(originalPrice)) * 100)
-    : 0;
-
-  async function onSubmit(values: CourseFormValues) {
-    try {
-      setSubmitStatus('idle')
+  const submitMutation = useMutation<Course, Error, CourseFormValues>({
+    mutationFn: async (values) =>{
       const softwareArray = values.software.split(',').map(s => s.trim()).filter(Boolean);
-      
-      // Create the course object matching your Course interface
       const courseData = {
         title: values.title,
         description: values.description,
@@ -166,34 +125,52 @@ const AddEditCoursePage = () => {
         couponCode: values.couponCode || '',
         expiresAt: values.expiresAt || undefined,
         isActive: values.isActive,
+        isArchived: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        archivedAt: undefined,
       };
-
-      console.log('New Course Data:', courseData);
-
-      let result;
-
       if (isEditMode && id) {
-        // Edit existing course
-        result = await courseService.updateCourse(id, courseData);
-        console.log('Update result:', result);
+        return updateCourse(id, courseData);
       } else {
-        // Create new course
-        result = await courseService.createCourse(courseData);
-        console.log('Create result:', result);
+        return createCourse(courseData);
       }
-
-      setSubmitStatus('success');
-      
-      // Navigate after 3 seconds
+    },
+    onSuccess: () => {
+      toast.success('Course saved successfully!');
       setTimeout(() => {
         navigate('/admin/courses');
-      }, 3000);
-      
-    } catch (error) {
-      console.error('Error submitting course:', error);
-      setSubmitStatus('error');
-    }
+      }, 1500);
+    },
+    onError: (error) => {
+      toast.error('Failed to save course: ' + error.message);
+    },
+  })
+
+  async function onSubmit(values: CourseFormValues) {
+    submitMutation.mutate(values);
   }
+
+  const [softwarePreview, setSoftwarePreview] = useState<string[]>([]);
+  const selectedCategory = form.watch('category');
+  const softwareInput = form.watch('software');
+  const originalPrice = form.watch('originalPrice');
+  const discountedPrice = form.watch('discountedPrice');
+
+  useEffect(() => {
+    if (softwareInput) {
+      const techs = softwareInput.split(',').map((t: string) => t.trim()).filter(Boolean);
+      setSoftwarePreview(techs);
+    } else {
+      setSoftwarePreview([]);
+    }
+  }, [softwareInput]);
+
+  const availableSubcategories = categoriesData
+  .find((c) => c.name === selectedCategory)?.subcategories || [];
+
+  const savings = originalPrice > 0 && discountedPrice > 0 ? 
+    Math.round(((originalPrice - discountedPrice) / originalPrice) * 100) : 0;
 
   const nextTab = () => {
     const tabs = ['basic-info', 'pricing', 'media', 'deal-details', 'category'];
@@ -211,7 +188,7 @@ const AddEditCoursePage = () => {
     }
   };
 
-  if (isEditMode && loading) {
+  if (isEditMode && isLoading) {
     return (
       <main className="flex-1 overflow-hidden flex items-center justify-center">
         <div className="text-center">
@@ -222,13 +199,13 @@ const AddEditCoursePage = () => {
     );
   }
 
-  if (isEditMode && fetchError) {
+  if (isEditMode && error) {
     return (
       <main className="flex-1 overflow-hidden flex items-center justify-center">
         <div className="text-center max-w-md">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold mb-2">Error Loading Course</h2>
-          <p className="text-muted-foreground mb-4">{fetchError}</p>
+          <p className="text-muted-foreground mb-4">{error.message}</p>
           <Button onClick={() => navigate('/admin/courses')}>
             Back to Courses
           </Button>
@@ -255,25 +232,6 @@ const AddEditCoursePage = () => {
             </Button>
           </div>
         </div>
-
-        {/* Success/Error Alerts */}
-        {submitStatus === 'success' && (
-          <Alert className="mb-6 border-green-500 bg-green-50 dark:bg-green-950">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800 dark:text-green-200">
-              Course {isEditMode ? 'updated' : 'added'} successfully! Redirecting...
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        {submitStatus === 'error' && (
-          <Alert className="mb-6 border-red-500 bg-red-50 dark:bg-red-950">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800 dark:text-red-200">
-              Something went wrong. Please try again.
-            </AlertDescription>
-          </Alert>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Form */}
@@ -690,15 +648,15 @@ const AddEditCoursePage = () => {
                       {activeTab === 'category' ? (
                         <Button 
                           type="submit" 
-                          disabled={submitStatus === 'success'}
+                          disabled={submitMutation.isPending}
                         >
-                          {submitStatus === 'success' ? (
+                          {submitMutation.isPending ? (
                             <>
-                              <CheckCircle2 className="mr-2 h-4 w-4" />
-                              {id ? 'Course Updated Successfully!' : 'Course Added Successfully!'}
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              {isEditMode ? 'Updating Course...' : 'Adding Course...'}
                             </>
                           ) : (
-                            id ? 'Update Course' : 'Add Course'
+                            isEditMode ? 'Update Course' : 'Add Course'
                           )}
                         </Button>
                       ) : (

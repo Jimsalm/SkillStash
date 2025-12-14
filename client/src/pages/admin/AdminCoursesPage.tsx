@@ -61,7 +61,7 @@ const AdminCoursesPage = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const { data: allCoursesForFilters } = useQuery<Course[], Error>({
-    queryKey: ['courses', 'all-for-filters'],
+    queryKey: ['courses'],
     queryFn: () => fetchCourses(),
   }) 
 
@@ -206,7 +206,7 @@ const instructorOptions = useMemo(() => {
             Filters
           </Button>
           <Button asChild>
-            <a href="/admin/add-course">
+            <a href="/admin/courses/add">
               <Plus className="h-4 w-4" />
               Add New Course
             </a>

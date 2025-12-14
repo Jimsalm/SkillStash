@@ -63,7 +63,7 @@ const AdminArchivedCoursesPage = () => {
 
   //get all archived courses for filters
   const { data: allArchivedCoursesForFilters } = useQuery<Course[], Error>({
-    queryKey: ['courses', 'archived', 'for-filters'],
+    queryKey: ['courses', 'archived'],
     queryFn: () => fetchArchivedCourses(),
   });
 
