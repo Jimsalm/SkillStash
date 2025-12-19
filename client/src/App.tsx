@@ -6,11 +6,11 @@ import PublicLayout from "./components/PublicLayout";
 import AdminLayout from "@/components/admin/AdminLayout";
 
 // --- Public Pages ---
-import Home from "./pages/Home";
-import About from "./pages/About";
-import CourseCategory from "./pages/CourseCategory";
-import CourseList from "./pages/CourseList";
-import CourseDetails from "./pages/CourseDetails";
+import Home from "./pages/User/Home";
+import About from "./pages/User/About";
+import CourseCategory from "./pages/User/CourseCategory";
+import CourseList from "./pages/User/CourseList";
+import CourseDetails from "./pages/User/CourseDetails";
 import Register from "./pages/Auth/Register";
 
 // --- Admin Pages ---

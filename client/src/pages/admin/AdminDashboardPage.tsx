@@ -178,7 +178,7 @@ const AdminDashboardPage = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link to="/admin/add-course">
+            <Link to="/admin/courses/add">
               <Button variant="outline" className="w-full h-auto p-4 flex flex-col items-start gap-2 hover:bg-secondary">
                 <div className="flex items-center gap-2 w-full">
                   <BookOpen className="h-5 w-5 text-primary" />
