@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from openai import OpenAI
 import os 
 from dotenv import load_dotenv 
-/
+
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
