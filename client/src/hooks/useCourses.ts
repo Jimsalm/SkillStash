@@ -13,22 +13,27 @@ import {
   incrementClaimedCount,
 } from '@/api/courseApi';
 import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
+import { useAuth } from '@/components/admin/AuthContext';
 
 // --- Queries ---
 
 // 1. Fetch Active Courses List
 export const useActiveCourses = (params?: CourseFilters) => {
+  const { isAuthenticated } = useAuth();
   return useQuery<Course[], Error>({
     queryKey: ['courses', 'active', params],
     queryFn: () => fetchCourses(params),
+    enabled: isAuthenticated,
   });
 };
 
 // 2. Fetch All Active Courses (For Filter Dropdowns)
 export const useCoursesForFilters = () => {
+  const { isAuthenticated } = useAuth();
   return useQuery<Course[], Error>({
     queryKey: ['courses', 'filters'],
-    queryFn: () => fetchCourses(), 
+    queryFn: () => fetchCourses(),
+    enabled: isAuthenticated,
   });
 };
 
@@ -39,9 +44,11 @@ export const useArchivedCourses = (filters?: {
   categoryFilter?: string;
   instructorFilter?: string;
 }) => {
+  const { isAuthenticated } = useAuth();
   return useQuery<Course[], Error>({
     queryKey: ['courses', 'archived', filters],
     queryFn: fetchArchivedCourses,
+    enabled: isAuthenticated,
     select: (data) => {
       return data.filter((course) => {
         const matchesSearch =
@@ -68,18 +75,21 @@ export const useArchivedCourses = (filters?: {
 
 // 4. Fetch All Archived Courses (For Filter Dropdowns)
 export const useArchivedCoursesForFilters = () => {
+  const { isAuthenticated } = useAuth();
   return useQuery<Course[], Error>({
     queryKey: ['courses', 'archived', 'filters'],
     queryFn: fetchArchivedCourses,
+    enabled: isAuthenticated,
   });
 };
 
 // 5. Fetch Single Course
 export const useCourse = (id?: string) => {
+  const { isAuthenticated } = useAuth();
   return useQuery<Course, Error>({
     queryKey: ['course', id],
     queryFn: () => fetchCourseById(id!),
-    enabled: !!id,
+    enabled: !!id && isAuthenticated,
   });
 }
 
@@ -168,10 +178,8 @@ export const useClaimCourse = () => {
   return useMutation<Course, Error, string>({
     mutationFn: (id: string) => incrementClaimedCount(id),
     onSuccess: (updatedCourse, id) => {
-      // Optimistically update the specific course cache
       queryClient.setQueryData(['course', id], updatedCourse);
       
-      // Invalidate active courses list to update counts in the list view
       queryClient.invalidateQueries({ queryKey: ['courses', 'active'] });
       
       toast.success('Course claimed successfully!');

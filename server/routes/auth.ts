@@ -33,9 +33,17 @@ router.post("/register", async (req: Request, res: Response) => {
       email,
       password: cryptedPassword,
     });
-    res.status(201).json({ msg: "User Registered", user: newUser });
+
+    const userWithoutPassword = newUser.toObject();
+    delete (userWithoutPassword as any).password;
+
+    res.status(201).json({ msg: "User Registered", user: userWithoutPassword });
   } catch (error) {
-    return res.status(500).json({ msg: "Server Error", error });
+    console.error("Registration error:", error);
+    return res.status(500).json({ 
+      msg: "Server Error", 
+      error: error instanceof Error ? error.message : "Unknown error" 
+    });
   }
 });
 

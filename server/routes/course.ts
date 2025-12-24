@@ -1,11 +1,12 @@
 import express, { Request, Response} from 'express'
 import Course from '../models/Course'
 import { count } from 'console';
+import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router()
 
 // GET /api/courses - Retrieve all courses
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', authMiddleware, async (req: Request, res: Response) => {
     try {
         const { category, subcategory, isActive, search } = req.query;
         const query: any = {};
@@ -35,7 +36,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 //GET /api/courses/active - Get active courses
-router.get('/active', async (req: Request, res: Response) => {
+router.get('/active', authMiddleware, async (req: Request, res: Response) => {
     try {
         const courses = await Course.find({ isActive: true }).sort({ createdAt: -1 });
         
@@ -55,7 +56,7 @@ router.get('/active', async (req: Request, res: Response) => {
 });
 
 //GET /api/courses/archived - Get archived courses
-router.get('/archived', async (req: Request, res: Response) => {
+router.get('/archived', authMiddleware, async (req: Request, res: Response) => {
     try {
         const courses = await Course.find({ isArchived: true }).sort({ createdAt: -1 });
         res.json({ 
@@ -71,7 +72,7 @@ router.get('/archived', async (req: Request, res: Response) => {
 });
 
 // GET /api/courses/:id - Retrieve a single course by ID
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', authMiddleware, async (req: Request, res: Response) => {
     try {
         const course = await Course.findById(req.params.id);
         if (!course) {
@@ -91,7 +92,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // POST /api/courses - Create a new course
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', authMiddleware, async (req: Request, res: Response) => {
     try {
         const course = await Course.create(req.body);
 
@@ -116,7 +117,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // PUT /api/courses/:id - Update an existing course
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
     try {
         const course = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         if (!course) {
@@ -145,7 +146,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/courses/:id - Delete a course
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
     try {
         const course = await Course.findByIdAndDelete(req.params.id);
         if (!course) {
@@ -166,7 +167,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 //PATCH /api/courses/:id/activate - Activate or deactivate a course
-router.patch('/:id/toggle-active', async (req: Request, res: Response) => {
+router.patch('/:id/toggle-active', authMiddleware, async (req: Request, res: Response) => {
     try {
         const course = await Course.findById(req.params.id);
         if (!course) {
@@ -189,7 +190,7 @@ router.patch('/:id/toggle-active', async (req: Request, res: Response) => {
 });
 
 //PATCH /api/courses/:id/increment-claim - Increment claimed count
-router.patch('/:id/increment-claim', async (req: Request, res: Response) => {
+router.patch('/:id/increment-claim', authMiddleware, async (req: Request, res: Response) => {
     try {
         const course = await Course.findById(req.params.id);
         if (!course) {
@@ -212,7 +213,7 @@ router.patch('/:id/increment-claim', async (req: Request, res: Response) => {
 });
 
 //PATCH /api/courses/:id/archive - Archive a course
-router.patch('/:id/archive', async (req: Request, res: Response) => {
+router.patch('/:id/archive', authMiddleware, async (req: Request, res: Response) => {
     try {
         const course = await Course.findById(req.params.id);
         if (!course) {

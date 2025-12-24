@@ -1,11 +1,12 @@
 import express, { Request, Response } from 'express';
 import Course from '../models/Course';
+import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
 
 
 //GET /api/dashboard/stats - Get course statistics
-router.get('/stats', async (req: Request, res: Response) => {
+router.get('/stats', authMiddleware, async (req: Request, res: Response) => {
     try {
         const totalCourses = await Course.countDocuments();
         
@@ -43,7 +44,7 @@ router.get('/stats', async (req: Request, res: Response) => {
 });
 
 //GET /api/dashboard/stats/today - Get today stats
-router.get('/stats/today', async (req: Request, res: Response) =>{
+router.get('/stats/today', authMiddleware, async (req: Request, res: Response) =>{
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -72,7 +73,7 @@ router.get('/stats/today', async (req: Request, res: Response) =>{
 })
 
 //GET /api/dashboard/top-courses - Get top courses claim
-router.get('/top-courses', async (req: Request, res: Response) => {
+router.get('/top-courses', authMiddleware, async (req: Request, res: Response) => {
     try {
         const limit = parseInt(req.query.limit as string) || 5;
         const topCourses = await Course.find({isActive: true}).sort({claimedCount: -1}).limit(limit).select('title claimedCount');
@@ -91,7 +92,7 @@ router.get('/top-courses', async (req: Request, res: Response) => {
 })
 
 //GET /api/dashboard/recent-activity - Get recent activity
-router.get('/recent-activity', async (req: Request, res: Response) => {
+router.get('/recent-activity', authMiddleware, async (req: Request, res: Response) => {
     try {
         const limit = parseInt(req.query.limit as string) || 5;
         const recentCourses = await Course.find({isActive: true}).sort({createdAt: -1}).limit(limit).select('title createdAt expiresAt updatedAt');

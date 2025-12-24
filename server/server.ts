@@ -6,15 +6,14 @@ import coursesRouter from "./routes/course";
 import dashboardRouter from "./routes/dashboard";
 import authRouter from "./routes/auth";
 
-// Load environment variables from .env file
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 5001; // Use a different port than React (3000)
+const port = process.env.PORT || 5001;
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // Your React app URL
+    origin: "http://localhost:5173",
     credentials: true,
   })
 );
