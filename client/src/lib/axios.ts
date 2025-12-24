@@ -7,11 +7,10 @@ export const api = axios.create({
   },
 });
 
-// Response Interceptor to handle common error responses
+// Response Interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Check for a specific error structure from your backend
     if (error.response && !error.response.data.success) {
       console.error('API Error:', error.response.data.message);
     }

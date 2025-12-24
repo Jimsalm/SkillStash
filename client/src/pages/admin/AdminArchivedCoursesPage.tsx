@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchArchivedCourses, archiveCourse, deleteCourse, type Course } from '@/api/courseApi';
+import { useArchivedCourses, useArchivedCoursesForFilters, useArchiveCourse, useDeleteCourse } from '@/hooks/useCourses';
+import type { Course } from '@/api/courseApi';
 import { useNavigate } from 'react-router-dom';
 import {
   Table,
@@ -51,7 +51,9 @@ import { toast } from 'sonner';
 
 const AdminArchivedCoursesPage = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  // Hooks
+  const { data: allArchivedCoursesForFilters } = useArchivedCoursesForFilters();
+  const { data: courses, isLoading, error, refetch } = useArchivedCourses();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -61,124 +63,51 @@ const AdminArchivedCoursesPage = () => {
   const [instructorFilter, setInstructorFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  //get all archived courses for filters
-  const { data: allArchivedCoursesForFilters } = useQuery<Course[], Error>({
-    queryKey: ['courses', 'archived'],
-    queryFn: () => fetchArchivedCourses(),
+  // Using the hook with dynamic filters
+  const { data: filteredCourses, isLoading: isFilterLoading } = useArchivedCourses({
+    searchQuery,
+    statusFilter,
+    categoryFilter,
+    instructorFilter
   });
 
-  //get archived courses
-  const { data: courses, isLoading, error, refetch } = useQuery<Course[], Error>({
-    queryKey: ['courses', 'archived', { searchQuery, statusFilter, categoryFilter, instructorFilter }],
-    queryFn: () => fetchArchivedCourses(),
-    select: (data) => {
-      return data.filter((course) => {
-        const matchesSearch = 
-          course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          course.instructor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          course.subcategory.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          course.couponCode?.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        const matchesStatus = 
-          statusFilter === 'all' ||
-          (statusFilter === 'active' && course.isActive) ||
-          (statusFilter === 'inactive' && !course.isActive);
+  // Mutations
+  const unarchiveMutation = useArchiveCourse();
+  const deleteMutation = useDeleteCourse();
 
-        const matchesCategory = 
-          categoryFilter === 'all' || course.category === categoryFilter;
-
-        const matchesInstructor = 
-          instructorFilter === 'all' || course.instructor === instructorFilter;
-
-        return matchesSearch && matchesStatus && matchesCategory && matchesInstructor;
-      });
-    }
-  });
-
-  //unarchive course mutation
-  const unarchiveCourse = useMutation<Course, Error, string>({
-    mutationFn: archiveCourse,
-    onSuccess: () => {
-      refetch();
-      queryClient.invalidateQueries({ queryKey: ['courses'] });
-      toast.success('Course unarchived successfully');
-    },
-    onError: (error) => {
-      console.error('Failed to unarchive course:', error);
-      toast.error('Failed to unarchive course');
-    }
-  });
-
-  //delete course mutation
-  const deleteMutation = useMutation<void, Error, string>({
-    mutationFn: deleteCourse,
-    onSuccess: () => {
-      refetch();
-      queryClient.invalidateQueries({ queryKey: ['courses', 'archived'] });
-      toast.success('Course deleted permanently');
-    },
-    onError: (error) => {
-      console.error('Failed to delete course:', error);
-      toast.error('Failed to delete course');
-    }
-  });
-
-  //filter options
   const categoryOptions = useMemo(() => {
-    if (!allArchivedCoursesForFilters || allArchivedCoursesForFilters.length === 0) return ['all'];
+    if (!allArchivedCoursesForFilters?.length) return ['all'];
     const categories = [...new Set(allArchivedCoursesForFilters.map(c => c.category))];
     return ['all', ...categories.sort()];
   }, [allArchivedCoursesForFilters]);
 
   const instructorOptions = useMemo(() => {
-    if (!allArchivedCoursesForFilters || allArchivedCoursesForFilters.length === 0) return ['all'];
+    if (!allArchivedCoursesForFilters?.length) return ['all'];
     const instructors = [...new Set(allArchivedCoursesForFilters.map(c => c.instructor))];
     return ['all', ...instructors.sort()];
   }, [allArchivedCoursesForFilters]);
 
-  //pagination
-  const totalPages = Math.ceil((courses?.length || 0) / pageSize);
+  // Pagination Logic
+  const totalPages = Math.ceil((filteredCourses?.length || 0) / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const paginatedCourses = courses?.slice(startIndex, endIndex) || [];
+  const paginatedCourses = filteredCourses?.slice(startIndex, endIndex) || [];
 
-  const handleFilterChange = () => {
-    setCurrentPage(1);
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    handleFilterChange();
-  };
-
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    setStatusFilter('all');
-    setCategoryFilter('all');
-    setInstructorFilter('all');
-    setCurrentPage(1);
-  };
-
+  const handleFilterChange = () => setCurrentPage(1);
+  const handleSearchChange = (value: string) => { setSearchQuery(value); handleFilterChange(); };
+  const handleResetFilters = () => { setSearchQuery(''); setStatusFilter('all'); setCategoryFilter('all'); setInstructorFilter('all'); setCurrentPage(1); };
+  
   const handleUnarchive = async (courseId: string) => {
-    if (!confirm('Are you sure you want to unarchive this course?')) {
-      return;
-    }
-
-    unarchiveCourse.mutate(courseId);
+    if (!confirm('Are you sure you want to unarchive this course?')) return;
+    unarchiveMutation.mutate(courseId);
   };
 
   const handleDelete = async (courseId: string) => {
-    if (!confirm('Are you sure you want to delete this course permanently?')) {
-      return;
-    }
-
+    if (!confirm('Are you sure you want to delete this course permanently?')) return;
     deleteMutation.mutate(courseId);
   };
 
-  const handleNavigate = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
+  const handleNavigate = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
   const hasActiveFilters = searchQuery || statusFilter !== 'all' || categoryFilter !== 'all' || instructorFilter !== 'all';
 
   if (isLoading) {
@@ -331,77 +260,38 @@ const AdminArchivedCoursesPage = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">#</TableHead>
-              <TableHead>Course</TableHead>
-              <TableHead>Instructor</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Archived Date</TableHead>
-              <TableHead>Claimed</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+               <TableHead className="w-[50px]">#</TableHead>
+               <TableHead>Course</TableHead>
+               <TableHead>Instructor</TableHead>
+               <TableHead>Category</TableHead>
+               <TableHead>Archived Date</TableHead>
+               <TableHead>Claimed</TableHead>
+               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedCourses.length > 0 ? (
               paginatedCourses.map((course, index) => (
                 <TableRow key={course._id}>
-                  <TableCell className="text-muted-foreground">
-                    {startIndex + index + 1}
-                  </TableCell>
+                  <TableCell className="text-muted-foreground">{startIndex + index + 1}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-3">
-                      <img 
-                        src={course.image} 
-                        alt={course.title} 
-                        className="h-10 w-10 rounded object-cover" 
-                      />
-                      <div className="max-w-[300px]">
-                        <p className="font-medium truncate">{course.title}</p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {course.subcategory}
-                        </p>
-                      </div>
+                      <img src={course.image} alt={course.title} className="h-10 w-10 rounded object-cover" />
+                      <div className="max-w-[300px]"><p className="font-medium truncate">{course.title}</p><p className="text-sm text-muted-foreground truncate">{course.subcategory}</p></div>
                     </div>
                   </TableCell>
                   <TableCell>{course.instructor}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {course.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {course.archivedAt ? new Date(course.archivedAt).toLocaleDateString() : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium">{course.claimedCount.toLocaleString()}</span>
-                      <span className="text-xs text-muted-foreground">claims</span>
-                    </div>
-                  </TableCell>
+                  <TableCell><Badge variant="outline" className="text-xs">{course.category}</Badge></TableCell>
+                  <TableCell>{course.archivedAt ? new Date(course.archivedAt).toLocaleDateString() : 'N/A'}</TableCell>
+                  <TableCell><div className="flex items-center gap-1"><span className="font-medium">{course.claimedCount.toLocaleString()}</span><span className="text-xs text-muted-foreground">claims</span></div></TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
+                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleUnarchive(course._id)}>
-                          <ArchiveRestore className="h-4 w-4 mr-2" />
-                          Unarchive
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleNavigate(course.udemyUrl)}>
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Navigate
-                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleUnarchive(course._id)}><ArchiveRestore className="h-4 w-4 mr-2" /> Unarchive</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleNavigate(course.udemyUrl)}><ExternalLink className="h-4 w-4 mr-2" /> Navigate</DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          onClick={() => handleDelete(course._id)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDelete(course._id)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

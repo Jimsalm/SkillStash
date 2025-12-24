@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { fetchCourseById, createCourse, updateCourse, type Course } from '@/api/courseApi';
+import { useCourse, useUpsertCourse } from '@/hooks/useCourses';
 import {
   Form,
   FormControl,
@@ -54,6 +53,9 @@ const AddEditCoursePage = () => {
   const isEditMode = Boolean(id);
   const [activeTab, setActiveTab] = useState('basic-info');
 
+  const { data: courseData, isLoading, error } = useCourse(id);
+  const submitMutation = useUpsertCourse();
+
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(courseFormSchema),
     defaultValues: {
@@ -74,22 +76,13 @@ const AddEditCoursePage = () => {
     },
   });
 
-  //Fetch course data
-  const { data: courseData, isLoading, error } = useQuery<Course, Error>({
-    queryKey: ['course', id],
-    queryFn: () => fetchCourseById(id!),
-    enabled: isEditMode && !!id,
-  });
-
-  //Reset form on course data change
+  // Reset form when data loads
   useEffect(() => {
     if (courseData) {
       let formattedDate = '';
       if (courseData.expiresAt) {
-        const date = new Date(courseData.expiresAt);
-        formattedDate = date.toISOString().split('T')[0];
+        formattedDate = new Date(courseData.expiresAt).toISOString().split('T')[0];
       }
-
       form.reset({
         title: courseData.title,
         description: courseData.description,
@@ -101,7 +94,7 @@ const AddEditCoursePage = () => {
         image: courseData.image,
         udemyUrl: courseData.udemyUrl,
         couponCode: courseData.couponCode,
-        expiresAt: courseData.expiresAt,
+        expiresAt: formattedDate,
         category: courseData.category,
         subcategory: courseData.subcategory,
         isActive: courseData.isActive,
@@ -109,49 +102,13 @@ const AddEditCoursePage = () => {
     }
   }, [courseData, form]);
 
-  //Submit mutation
-  const submitMutation = useMutation<Course, Error, CourseFormValues>({
-    mutationFn: async (values) =>{
-      const softwareArray = values.software.split(',').map(s => s.trim()).filter(Boolean);
-      const courseData = {
-        title: values.title,
-        description: values.description,
-        image: values.image,
-        instructor: values.instructor,
-        software: softwareArray,
-        claimedCount: values.claimedCount,
-        originalPrice: values.originalPrice,
-        discountedPrice: values.discountedPrice,
-        category: values.category,
-        subcategory: values.subcategory,
-        udemyUrl: values.udemyUrl,
-        couponCode: values.couponCode || '',
-        expiresAt: values.expiresAt || undefined,
-        isActive: values.isActive,
-        isArchived: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        archivedAt: undefined,
-      };
-      if (isEditMode && id) {
-        return updateCourse(id, courseData);
-      } else {
-        return createCourse(courseData);
-      }
-    },
-    onSuccess: () => {
-      toast.success('Course saved successfully!');
-      setTimeout(() => {
-        navigate('/admin/courses');
-      }, 1500);
-    },
-    onError: (error) => {
-      toast.error('Failed to save course: ' + error.message);
-    },
-  })
-
+  // Submit Handler
   async function onSubmit(values: CourseFormValues) {
-    submitMutation.mutate(values);
+    submitMutation.mutate({ isEdit: isEditMode, id, values }, {
+      onSuccess: () => {
+        setTimeout(() => navigate('/admin/courses'), 1500);
+      }
+    });
   }
 
   //Software preview
