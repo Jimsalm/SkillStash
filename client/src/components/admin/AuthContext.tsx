@@ -1,58 +1,86 @@
-import React, { createContext, useState, useContext } from 'react';
-import type { ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { login, register, type AuthResponse, type LoginInput, type RegisterInput } from "@/api/authApi";
+import { toast } from "sonner";
 
-// Define the shape of the context value
 interface AuthContextType {
-  isAdmin: boolean;
-  login: (email: string, password: string) => boolean;
+  user: { id: string; name: string; email: string } | null;
+  token: string | null;
+  loginAction: (data: LoginInput) => Promise<void>;
+  registerAction: (data: RegisterInput) => Promise<void>;
   logout: () => void;
+  isAuthenticated: boolean;
 }
 
-// Create the context with a default value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAdmin, setIsAdmin] = useState(false);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
+  const navigate = useNavigate();
 
-  console.log('AuthProvider: isAdmin state is:', isAdmin); // <-- DEBUG LOG
-
-  const login = (email: string, password: string) => {
-    console.log('AuthProvider: login attempt with', email); // <-- DEBUG LOG
-    if (email === 'admin@skillstash.com' && password === 'password123') {
-      setIsAdmin(true);
-      localStorage.setItem('isAdmin', 'true');
-      console.log('AuthProvider: login successful!'); // <-- DEBUG LOG
-      return true;
-    }
-    console.log('AuthProvider: login failed!'); // <-- DEBUG LOG
-    return false;
-  };
-
-  const logout = () => {
-    setIsAdmin(false);
-    localStorage.removeItem('isAdmin');
-  };
-
-  React.useEffect(() => {
-    const storedAuth = localStorage.getItem('isAdmin');
-    console.log('AuthProvider: Checking localStorage. Found:', storedAuth); // <-- DEBUG LOG
-    if (storedAuth === 'true') {
-      setIsAdmin(true);
+  // Check if user is logged in on mount
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
     }
   }, []);
 
+  const loginAction = async (data: LoginInput) => {
+    try {
+      const res = await login(data);
+      if (res.token) {
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("user", JSON.stringify(res.user));
+        setToken(res.token);
+        setUser(res.user);
+        toast.success("Logged in successfully!");
+        navigate("/"); 
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.msg || error.response?.data?.error || "Login failed";
+      toast.error(errorMsg);
+    }
+  };
+
+  const registerAction = async (data: RegisterInput) => {
+    try {
+      const res = await register(data);
+      if (res.token) {
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("user", JSON.stringify(res.user));
+        setToken(res.token);
+        setUser(res.user);
+        toast.success("Account created successfully!");
+        navigate("/"); 
+      }
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.msg || error.response?.data?.error || "Registration failed";
+      toast.error(errorMsg);
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setToken(null);
+    setUser(null);
+    navigate("/auth/login");
+    toast.success("Logged out");
+  };
+
   return (
-    <AuthContext.Provider value={{ isAdmin, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loginAction, registerAction, logout, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Create a custom hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };
