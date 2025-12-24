@@ -40,18 +40,28 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
-  Loader2
+  Loader2,
+  Wand2
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { courseFormSchema, categoriesData } from '@/lib/schemas/courseFormSchema';
 import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
 import { toast } from 'sonner';
 
+// Helper to clean price strings like "$89.99" to number 89.99
+const cleanPrice = (priceStr: string | undefined | null): number => {
+  if (!priceStr) return 0;
+  return parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
+};
+
 const AddEditCoursePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditMode = Boolean(id);
   const [activeTab, setActiveTab] = useState('basic-info');
+  
+  // State for scraper loading
+  const [isScraping, setIsScraping] = useState(false);
 
   const { data: courseData, isLoading, error } = useCourse(id);
   const submitMutation = useUpsertCourse();
@@ -111,7 +121,49 @@ const AddEditCoursePage = () => {
     });
   }
 
-  //Software preview
+  // --- AUTO-FILL LOGIC ---
+  const handleAutoFill = async () => {
+    const targetUrl = window.prompt("Enter the DiscUdemy URL to scrape:", form.getValues('udemyUrl'));
+    
+    if (!targetUrl) return;
+
+    setIsScraping(true);
+    try {
+      // This calls the Python server running on port 5000
+      const response = await fetch(`http://127.0.0.1:5000/scrape?url=${encodeURIComponent(targetUrl)}`);
+      
+      if (!response.ok) throw new Error('Failed to connect to scraper');
+      
+      const data = await response.json();
+
+      if (data && !data.error) {
+        const currentValues = form.getValues();
+        
+        form.reset({
+          ...currentValues,
+          title: data.title || currentValues.title,
+          description: data.description || currentValues.description,
+          instructor: data.instructor || currentValues.instructor,
+          software: data.technologies || currentValues.software,
+          originalPrice: cleanPrice(data.originalPrice),
+          discountedPrice: cleanPrice(data.discountedPrice),
+          image: data.imageUrl || currentValues.image,
+          udemyUrl: data.udemyUrl || targetUrl, 
+          category: data.category || currentValues.category, 
+        });
+
+        toast.success("Course details auto-filled successfully!");
+      } else {
+        toast.error("Could not extract data from that URL.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error connecting to scraper. Is 'scraper_api.py' running?");
+    } finally {
+      setIsScraping(false);
+    }
+  };
+
   const [softwarePreview, setSoftwarePreview] = useState<string[]>([]);
   const selectedCategory = form.watch('category');
   const softwareInput = form.watch('software');
@@ -127,11 +179,9 @@ const AddEditCoursePage = () => {
     }
   }, [softwareInput]);
 
-  //Available subcategories
   const availableSubcategories = categoriesData
   .find((c) => c.name === selectedCategory)?.subcategories || [];
 
-  //Savings calculation
   const savings = originalPrice > 0 && discountedPrice > 0 ? 
     Math.round(((originalPrice - discountedPrice) / originalPrice) * 100) : 0;
 
@@ -180,7 +230,6 @@ const AddEditCoursePage = () => {
   return (
     <main className="flex-1 overflow-y-auto p-6">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-8xl">
-        {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold">Add New Course</h1>
@@ -197,7 +246,6 @@ const AddEditCoursePage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Form */}
           <div className="lg:col-span-2">
             <Card>
               <CardContent className="pt-6">
@@ -228,14 +276,8 @@ const AddEditCoursePage = () => {
                               <FormItem>
                                 <FormLabel>Course Title *</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    placeholder="e.g. React - The Complete Guide (incl. Hooks, Redux, Next.js)" 
-                                    {...field} 
-                                  />
+                                  <Input placeholder="e.g. React - The Complete Guide" {...field} />
                                 </FormControl>
-                                <FormDescription>
-                                  Make it clear and descriptive
-                                </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -248,15 +290,8 @@ const AddEditCoursePage = () => {
                               <FormItem>
                                 <FormLabel>Description *</FormLabel>
                                 <FormControl>
-                                  <Textarea 
-                                    placeholder="Describe what students will learn in this course..." 
-                                    rows={4}
-                                    {...field} 
-                                  />
+                                  <Textarea placeholder="Describe what students will learn..." rows={4} {...field} />
                                 </FormControl>
-                                <FormDescription>
-                                  Minimum 20 characters
-                                </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -287,16 +322,8 @@ const AddEditCoursePage = () => {
                                 <FormItem>
                                   <FormLabel>Students Claimed</FormLabel>
                                   <FormControl>
-                                    <Input 
-                                      type="number" 
-                                      placeholder="0" 
-                                      {...field}
-                                      onChange={e => field.onChange(Number(e.target.value))}
-                                    />
+                                    <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(Number(e.target.value))} />
                                   </FormControl>
-                                  <FormDescription className="text-xs">
-                                    How many students have claimed this deal
-                                  </FormDescription>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -310,25 +337,17 @@ const AddEditCoursePage = () => {
                               <FormItem>
                                 <FormLabel>Technologies/Tools *</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    placeholder="React, Redux, Next.js, TypeScript" 
-                                    {...field}
-                                    onChange={(e) => {
+                                  <Input placeholder="React, Redux, Next.js" {...field} onChange={(e) => {
                                       field.onChange(e);
                                       const techs = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
                                       setSoftwarePreview(techs);
-                                    }}
+                                    }} 
                                   />
                                 </FormControl>
-                                <FormDescription>
-                                  Separate multiple technologies with commas
-                                </FormDescription>
                                 {softwarePreview.length > 0 && (
                                   <div className="flex flex-wrap gap-2 mt-2">
                                     {softwarePreview.map((tech, idx) => (
-                                      <Badge key={idx} variant="secondary">
-                                        {tech}
-                                      </Badge>
+                                      <Badge key={idx} variant="secondary">{tech}</Badge>
                                     ))}
                                   </div>
                                 )}
@@ -347,7 +366,6 @@ const AddEditCoursePage = () => {
                             Pricing
                           </div>
                           <Separator />
-                          
                           <div className="grid grid-cols-2 gap-4">
                             <FormField
                               control={form.control}
@@ -356,19 +374,12 @@ const AddEditCoursePage = () => {
                                 <FormItem>
                                   <FormLabel>Original Price ($) *</FormLabel>
                                   <FormControl>
-                                    <Input 
-                                      type="number" 
-                                      step="0.01" 
-                                      placeholder="89.99" 
-                                      {...field}
-                                      onChange={e => field.onChange(Number(e.target.value))}
-                                    />
+                                    <Input type="number" step="0.01" placeholder="89.99" {...field} onChange={e => field.onChange(Number(e.target.value))} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
-                            
                             <FormField
                               control={form.control}
                               name="discountedPrice"
@@ -376,28 +387,17 @@ const AddEditCoursePage = () => {
                                 <FormItem>
                                   <FormLabel>Discounted Price ($) *</FormLabel>
                                   <FormControl>
-                                    <Input 
-                                      type="number" 
-                                      step="0.01" 
-                                      placeholder="14.99" 
-                                      {...field}
-                                      onChange={e => field.onChange(Number(e.target.value))}
-                                    />
+                                    <Input type="number" step="0.01" placeholder="14.99" {...field} onChange={e => field.onChange(Number(e.target.value))} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
-
                           {(savings >= 0 && originalPrice > 0) && (
                             <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3">
                               <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                {savings > 0 ? (
-                                  `💰 Students save ${savings}% ($${(Number(originalPrice) - Number(discountedPrice)).toFixed(2)})`
-                                ) : (
-                                  '🎉 This course is already at its best price!' 
-                                )}
+                                {savings > 0 ? `💰 Students save ${savings}%` : '🎉 Best price!'}
                               </p>
                             </div>
                           )}
@@ -418,16 +418,10 @@ const AddEditCoursePage = () => {
                             name="image"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="flex items-center gap-2">
-                                  <ImageIcon className="h-4 w-4" />
-                                  Course Image URL *
-                                </FormLabel>
+                                <FormLabel>Course Image URL *</FormLabel>
                                 <FormControl>
                                   <Input placeholder="https://img-c.udemycdn.com/course/..." {...field} />
                                 </FormControl>
-                                <FormDescription>
-                                  Direct link to course thumbnail (480x270 recommended)
-                                </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -439,9 +433,17 @@ const AddEditCoursePage = () => {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Udemy Course URL *</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="https://www.udemy.com/course/..." {...field} />
-                                </FormControl>
+                                <div className="flex gap-2">
+                                  <FormControl className="flex-1">
+                                    <Input placeholder="https://www.udemy.com/course/..." {...field} />
+                                  </FormControl>
+                                  <Button type="button" variant="secondary" onClick={handleAutoFill} disabled={isScraping} className="whitespace-nowrap">
+                                    {isScraping ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Wand2 className="h-4 w-4 mr-2" />Auto-fill</>}
+                                  </Button>
+                                </div>
+                                <FormDescription>
+                                  Click Auto-fill and paste a DiscUdemy link.
+                                </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -452,49 +454,15 @@ const AddEditCoursePage = () => {
                       {/* Deal Details Tab */}
                       <TabsContent value="deal-details" className="space-y-4 mt-4">
                         <div className="space-y-4">
-                          <div className="flex items-center gap-2 text-lg font-semibold">
-                            <Tag className="h-5 w-5 text-primary" />
-                            Deal Details
-                          </div>
+                          <div className="flex items-center gap-2 text-lg font-semibold"><Tag className="h-5 w-5 text-primary" /> Deal Details</div>
                           <Separator />
-                          
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="couponCode"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Coupon Code</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="REACT2024" {...field} />
-                                  </FormControl>
-                                  <FormDescription className="text-xs">
-                                    Optional
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={form.control}
-                              name="expiresAt"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4" />
-                                    Expiration Date
-                                  </FormLabel>
-                                  <FormControl>
-                                    <Input type="date" {...field} />
-                                  </FormControl>
-                                  <FormDescription className="text-xs">
-                                    Optional
-                                  </FormDescription>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
+                            <FormField control={form.control} name="couponCode" render={({ field }) => (
+                              <FormItem><FormLabel>Coupon Code</FormLabel><FormControl><Input placeholder="REACT2024" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="expiresAt" render={({ field }) => (
+                              <FormItem><FormLabel>Expiration Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
                           </div>
                         </div>
                       </TabsContent>
@@ -502,134 +470,46 @@ const AddEditCoursePage = () => {
                       {/* Category Tab */}
                       <TabsContent value="category" className="space-y-4 mt-4">
                         <div className="space-y-4">
-                          <div className="flex items-center gap-2 text-lg font-semibold">
-                            <FolderOpen className="h-5 w-5 text-primary" />
-                            Category
-                          </div>
+                          <div className="flex items-center gap-2 text-lg font-semibold"><FolderOpen className="h-5 w-5 text-primary" /> Category</div>
                           <Separator />
-                          
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="category"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Category *</FormLabel>
-                                  <Select 
-                                    onValueChange={(value) => {
-                                      field.onChange(value);
-                                      form.setValue('subcategory', '');
-                                    }} 
-                                    defaultValue={field.value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select a category" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {categoriesData.map((cat) => (
-                                        <SelectItem key={cat.name} value={cat.name}>
-                                          {cat.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={form.control}
-                              name="subcategory"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Subcategory *</FormLabel>
-                                  <Select 
-                                    onValueChange={field.onChange} 
-                                    value={field.value} 
-                                    disabled={!selectedCategory}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select a subcategory" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {availableSubcategories.map((sub) => (
-                                        <SelectItem key={sub} value={sub}>
-                                          {sub}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          
-                          <FormField
-                            control={form.control}
-                            name="isActive"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                <div className="space-y-0.5">
-                                  <FormLabel className="text-base">
-                                    Active Deal
-                                  </FormLabel>
-                                  <FormDescription>
-                                    Is this deal currently active and available?
-                                  </FormDescription>
-                                </div>
-                                <FormControl>
-                                  <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                  />
-                                </FormControl>
+                            <FormField control={form.control} name="category" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Category *</FormLabel>
+                                <Select onValueChange={(v) => { field.onChange(v); form.setValue('subcategory', ''); }} defaultValue={field.value}>
+                                  <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl>
+                                  <SelectContent>{categoriesData.map((c) => <SelectItem key={c.name} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <FormMessage />
                               </FormItem>
-                            )}
-                          />
+                            )} />
+                            <FormField control={form.control} name="subcategory" render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Subcategory *</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value} disabled={!selectedCategory}>
+                                  <FormControl><SelectTrigger><SelectValue placeholder="Select subcategory" /></SelectTrigger></FormControl>
+                                  <SelectContent>{availableSubcategories.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )} />
+                          </div>
+                          <FormField control={form.control} name="isActive" render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                              <div className="space-y-0.5"><FormLabel className="text-base">Active Deal</FormLabel><FormDescription>Is this deal currently active?</FormDescription></div>
+                              <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                          )} />
                         </div>
                       </TabsContent>
                     </Tabs>
                     
-                    {/* Navigation Buttons */}
                     <div className="flex justify-between">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={prevTab}
-                        disabled={activeTab === 'basic-info'}
-                      >
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Previous
-                      </Button>
-                      
+                      <Button type="button" variant="outline" onClick={prevTab} disabled={activeTab === 'basic-info'}><ArrowLeft className="h-4 w-4 mr-2" />Previous</Button>
                       {activeTab === 'category' ? (
-                        <Button 
-                          type="submit" 
-                          disabled={submitMutation.isPending}
-                        >
-                          {submitMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              {isEditMode ? 'Updating Course...' : 'Adding Course...'}
-                            </>
-                          ) : (
-                            isEditMode ? 'Update Course' : 'Add Course'
-                          )}
-                        </Button>
+                        <Button type="submit" disabled={submitMutation.isPending}>{submitMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Add Course'}</Button>
                       ) : (
-                        <Button 
-                          type="button" 
-                          onClick={nextTab}
-                        >
-                          Next
-                          <ArrowRight className="h-4 w-4 ml-2" />
-                        </Button>
+                        <Button type="button" onClick={nextTab}>Next<ArrowRight className="h-4 w-4 ml-2" /></Button>
                       )}
                     </div>
                   </form>
@@ -642,71 +522,16 @@ const AddEditCoursePage = () => {
           <div className="lg:col-span-1">
             <Card className="sticky top-6">
               <CardContent className="pt-6 space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Preview</h3>
-                  <p className="text-sm text-muted-foreground">How your course will appear</p>
-                </div>
-                
+                <div><h3 className="font-semibold mb-2">Preview</h3><p className="text-sm text-muted-foreground">How your course will appear</p></div>
                 <Separator />
-                
-                {form.watch('image') && (
-                  <img 
-                    src={form.watch('image')} 
-                    alt="Course preview" 
-                    className="w-full rounded-lg border"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://placehold.co/480x270?text=Invalid+URL';
-                    }}
-                  />
-                )}
-                
-                <div>
-                  <h4 className="font-semibold line-clamp-2">
-                    {form.watch('title') || 'Course title will appear here'}
-                  </h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {form.watch('instructor') || 'Instructor name'}
-                  </p>
-                </div>
-
-                {softwarePreview.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {softwarePreview.slice(0, 3).map((tech, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {tech}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
+                {form.watch('image') && <img src={form.watch('image')} alt="preview" className="w-full rounded-lg border" onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/480x270?text=Invalid+URL';}} />}
+                <div><h4 className="font-semibold line-clamp-2">{form.watch('title') || 'Course Title'}</h4><p className="text-sm text-muted-foreground mt-1">{form.watch('instructor') || 'Instructor'}</p></div>
                 {(originalPrice > 0 || discountedPrice > 0) && (
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-primary">
-                      ${form.watch('discountedPrice') || '0.00'}
-                    </span>
-                    {originalPrice > 0 && (
-                      <span className="text-sm text-muted-foreground line-through">
-                        ${form.watch('originalPrice')}
-                      </span>
-                    )}
+                    <span className="text-2xl font-bold text-primary">${form.watch('discountedPrice') || '0.00'}</span>
+                    {originalPrice > 0 && <span className="text-sm text-muted-foreground line-through">${form.watch('originalPrice')}</span>}
                   </div>
                 )}
-
-                {form.watch('isActive') !== undefined && (
-                  <Badge variant={form.watch('isActive') ? "default" : "secondary"}>
-                    {form.watch('isActive') ? "Active" : "Inactive"}
-                  </Badge>
-                )}
-
-                <Separator />
-
-                <div className="text-sm space-y-2 text-muted-foreground">
-                  <p className="font-semibold text-foreground">💡 Tips</p>
-                  <p>• Use clear, descriptive titles</p>
-                  <p>• Add high-quality course images</p>
-                  <p>• Include relevant technologies</p>
-                  <p>• Verify coupon codes before submitting</p>
-                </div>
               </CardContent>
             </Card>
           </div>

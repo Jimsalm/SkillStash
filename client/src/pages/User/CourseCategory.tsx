@@ -1,11 +1,11 @@
-import { useState, useEffect, type JSX } from 'react';
+import { useState, useMemo, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Code, Palette, Server, MoreHorizontal, Loader2, AlertCircle } from 'lucide-react';
-import { courseService } from '@/services/courseService';
+import { useActiveCourses } from '@/hooks/useCourses';
 import { categoriesData } from '@/lib/schemas/courseFormSchema';
-import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
+import type { Course } from '@/api/courseApi';
 
 interface SubcategoryWithCount {
   name: string;
@@ -17,18 +17,8 @@ interface CategoryWithCount {
   subcategories: SubcategoryWithCount[];
 }
 
-// Updated toSlug function to handle undefined values
-const toSlug = (text?: string) => {
-  if (!text) return '';
-  return text
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[()]/g, '')
-    .replace(/&/g, 'and');
-};
 export type CategoryKey = 'Development' | 'Graphic Design' | 'Network & System' | 'Others';
 
-// Icon mapping for categories
 const categoryIcons: Record<string, JSX.Element> = {
   'Development': <Code className="h-8 w-8 text-blue-600" />,
   'Graphic Design': <Palette className="h-8 w-8 text-pink-600" />,
@@ -36,7 +26,6 @@ const categoryIcons: Record<string, JSX.Element> = {
   'Others': <MoreHorizontal className="h-8 w-8 text-purple-600" />
 };
 
-// Description mapping for categories
 const categoryDescriptions: Record<CategoryKey, string> = {
   'Development': 'Build websites, apps, and software.',
   'Graphic Design': 'Create stunning visuals and designs.',
@@ -45,71 +34,46 @@ const categoryDescriptions: Record<CategoryKey, string> = {
 };
 
 const CourseCategory = () => {
-  const [courses, setCourses] = useState<CourseFormValues[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredCategories, setFilteredCategories] = useState<CategoryWithCount[]>([]);
+  
+  // Fetch all active courses once
+  const { data: courses, isLoading, error } = useActiveCourses();
 
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const allCourses = await courseService.getActiveCourses();
+  // Calculate categories with counts
+  const filteredCategories = useMemo(() => {
+    if (!courses) return [];
 
-        const coursesAsFormValues = allCourses.map(course => {
-          const softwareString = Array.isArray(course.software) 
-            ? course.software.join(', ') 
-            : String(course.software);
-
-          return {
-            ...course,
-            software: softwareString,
-          };
-        });
-
-        setCourses(coursesAsFormValues);
-      } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('An unknown error occurred');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCourses();
-  }, []);
-
-  useEffect(() => {
-    // Calculate course counts dynamically from fetched courses
+    // Map categories and count courses
     const categoriesWithCounts = categoriesData.map(category => ({
       ...category,
       subcategories: category.subcategories.map(subName => {
         const count = courses.filter(
-          (course) => course.category === category.name && course.subcategory === subName
+          (course: Course) => course.category === category.name && course.subcategory === subName
         ).length;
         return { name: subName, count };
       })
     }));
 
-    // Filter categories based on search term
-    if (searchTerm) {
-      const filtered = categoriesWithCounts.map(category => ({
-        ...category,
-        subcategories: category.subcategories.filter(sub => 
-          sub.name.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      })).filter(category => category.subcategories.length > 0);
-      
-      setFilteredCategories(filtered);
-    } else {
-      setFilteredCategories(categoriesWithCounts);
-    }
+    // Filter by search term
+    if (!searchTerm) return categoriesWithCounts;
+
+    return categoriesWithCounts.map(category => ({
+      ...category,
+      subcategories: category.subcategories.filter(sub => 
+        sub.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    })).filter(category => category.subcategories.length > 0);
   }, [courses, searchTerm]);
 
-  if (loading) {
+  const toSlug = (text: string) => {
+    return text
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[()]/g, '')
+      .replace(/&/g, 'and');
+  };
+
+  if (isLoading) {
     return (
       <main className="flex-1 bg-background flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -122,7 +86,7 @@ const CourseCategory = () => {
       <main className="flex-1 bg-background flex justify-center items-center h-64">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-          <p className="text-red-600">{error}</p>
+          <p className="text-red-600">{error.message}</p>
         </div>
       </main>
     );
@@ -139,7 +103,6 @@ const CourseCategory = () => {
           <p className="mt-4 text-lg text-muted-foreground">
             Find the perfect course from our wide range of categories.
           </p>
-          {/* Search Bar */}
           <div className="mt-8 relative mx-auto max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input

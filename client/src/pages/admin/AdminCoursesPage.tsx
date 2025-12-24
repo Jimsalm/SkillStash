@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useCourses, useCoursesForFilters, useArchiveCourse } from '@/hooks/useCourses';
+import { useActiveCourses, useCoursesForFilters, useArchiveCourse } from '@/hooks/useCourses';
 import type { Course } from '@/api/courseApi';
 
 import {
@@ -41,7 +41,7 @@ const AdminCoursesPage = () => {
   
   // Hooks
   const { data: allCoursesForFilters } = useCoursesForFilters();
-  const { data: courses, isLoading, error, refetch } = useCourses(
+  const { data: courses, isLoading, error, refetch } = useActiveCourses(
     {
       category: undefined,
       isActive: undefined, 

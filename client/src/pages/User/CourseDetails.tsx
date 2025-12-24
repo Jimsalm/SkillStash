@@ -1,74 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ExternalLink, ArrowLeft, Users, Clock, Tag, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
-import { courseService } from '@/services/courseService';
+import { useCourse, useClaimCourse } from '@/hooks/useCourses';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
+import type { Course } from '@/api/courseApi';
 
 const CourseDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const [course, setCourse] = useState<CourseFormValues | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  // Hooks
+  const { data: course, isLoading, error } = useCourse(id);
+  const claimMutation = useClaimCourse();
 
-  const [isClaiming, setIsClaiming] = useState<boolean>(false);
-  const [claimError, setClaimError] = useState<string | null>(null);
-  const [isClaimed, setIsClaimed] = useState<boolean>(false);
-
-  useEffect(() => {
-    const fetchCourse = async () => {
-      if (!id) return;
-      try {
-        const fetchedCourse = await courseService.getCourseById(id);
-        
-        if (fetchedCourse) {
-          const courseForForm: CourseFormValues = {
-            ...fetchedCourse,
-            software: fetchedCourse.software.join(', '),
-          };
-
-          setCourse(courseForForm);
-        }
-      } catch (err: unknown) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCourse();
-  }, [id]);
+  //State
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [isClaimed, setIsClaimed] = useState(false);
 
   const handleClaimCourse = async () => {
     if (isClaiming || isClaimed || !course || !id) return;
 
     setIsClaiming(true);
-    setClaimError(null);
-
+    
     try {
+      // link immediately for better UX
       window.open(course.udemyUrl, '_blank', 'noopener,noreferrer');
       
-      const updateCourse = await courseService.incrementClaimedCount(id);
-      const updatedCourseForm = {
-        ...updateCourse,
-        software: Array.isArray(updateCourse.software) 
-          ? updateCourse.software.join(', ')
-          : updateCourse.software
-      } as CourseFormValues;
+      // mutation to update backend stats
+      await claimMutation.mutateAsync(id);
       
-      setCourse(updatedCourseForm);
+      // Update UI state
       setIsClaimed(true);
-    } catch(err: unknown) {
-      setClaimError((err as Error).message || 'Failed to claim the course.');
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsClaiming(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <main className="flex-1 bg-background flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -85,7 +57,7 @@ const CourseDetails = () => {
         <div className="text-center max-w-md">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Error Loading Course</h1>
-          <p className="text-muted-foreground mb-4">{error}</p>
+          <p className="text-muted-foreground mb-4">{error.message}</p>
           <Button asChild>
             <Link to="/courses/categories">Back to Categories</Link>
           </Button>
@@ -112,14 +84,13 @@ const CourseDetails = () => {
     ? Math.round(((course.originalPrice - course.discountedPrice) / course.originalPrice) * 100)
     : 0;
 
-  const getSoftwareList = (software: string): string[] => {
-    return software.split(',').map(tech => tech.trim()).filter(Boolean);
+  const getSoftwareList = (software: string[]): string[] => {
+    return software || [];
   };
 
   return (
     <main className="flex-1 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
         <Button variant="ghost" asChild className="mb-6">
           <Link to="/courses/categories">
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -157,7 +128,6 @@ const CourseDetails = () => {
                 This course covers popular tools and technologies that will help you master {course.subcategory}.
               </p>
               <div className="flex flex-wrap gap-2">
-                {/* Use the helper function to split the software string into an array */}
                 {getSoftwareList(course.software).map((tech: string) => (
                   <Badge key={tech} variant="outline" className="text-base py-1 px-3">
                     {tech}
@@ -220,9 +190,9 @@ const CourseDetails = () => {
               <Button 
                 onClick={handleClaimCourse}
                 className="w-full text-lg py-3 mb-3"
-                disabled={!course.isActive || isClaiming || isClaimed}
+                disabled={!course.isActive || isClaiming || isClaimed || claimMutation.isPending}
               >
-                {isClaiming ? (
+                {(isClaiming || claimMutation.isPending) ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Claiming...
@@ -246,15 +216,6 @@ const CourseDetails = () => {
                 </p>
               )}
 
-              {claimError && (
-                <Alert className="mt-3 border-red-500 bg-red-50 dark:bg-red-950">
-                  <AlertCircle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800 dark:text-red-200">
-                    {claimError}
-                  </AlertDescription>
-                </Alert>
-              )}
-              
               <p className="text-xs text-muted-foreground text-center">
                 Coupon applied automatically.
               </p>

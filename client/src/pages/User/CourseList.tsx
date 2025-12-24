@@ -1,14 +1,14 @@
-import React, {useEffect, useState} from 'react';
+import { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import type { Course } from '@/services/courseService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Loader2, AlertCircle, ExternalLink, Eye } from 'lucide-react';
-import { courseService } from '@/services/courseService';
+import { useActiveCourses } from '@/hooks/useCourses';
+import type { Course } from '@/api/courseApi';
 
-// Helper function to convert slug to readable text
-const fromSlug = (slug: string): string => {
+const fromSlug = (slug?: string): string => {
+  if (!slug) return '';
   return slug
     .split('-')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -16,23 +16,24 @@ const fromSlug = (slug: string): string => {
     .replace(/And/g, '&');
 };
 
-// Course Card Component
-const CourseCard = ({ course }: { course: any }) => {
+const CourseCard = ({ course }: { course: Course }) => {
   const savings = course.originalPrice > 0 && course.discountedPrice > 0
     ? Math.round(((course.originalPrice - course.discountedPrice) / course.originalPrice) * 100)
     : 0;
 
   return (
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
-        <img 
-          src={course.image} 
-          alt={course.title} 
-          className="w-full h-48 object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = 'https://placehold.co/400x225?text=No+Image';
-          }}
-        />
-        <CardHeader>
+      <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
+        <div className="relative h-48 bg-muted">
+           <img 
+            src={course.image} 
+            alt={course.title} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://placehold.co/400x225?text=No+Image';
+            }}
+          />
+        </div>
+        <CardHeader className="flex-grow">
           <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>
           <CardDescription className="line-clamp-2">{course.description}</CardDescription>
         </CardHeader>
@@ -45,7 +46,7 @@ const CourseCard = ({ course }: { course: any }) => {
               </Badge>
             ))}
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
               {course.discountedPrice === 0 ? (
                 <span className="text-2xl font-bold text-primary">FREE</span>
@@ -64,11 +65,7 @@ const CourseCard = ({ course }: { course: any }) => {
               </Badge>
             )}
           </div>
-          <div className="flex items-center justify-between">
-            <Badge variant={course.isActive ? "default" : "secondary"}>
-              {course.isActive ? "Active" : "Expired"}
-            </Badge>
-            <div className="flex gap-2">
+          <div className="flex gap-2">
             <Button asChild size="sm" className="flex-1">
               <Link to={`/courses/details/${course._id}`}>
                 <Eye className="h-4 w-4 mr-2" />
@@ -81,7 +78,6 @@ const CourseCard = ({ course }: { course: any }) => {
               </a>
             </Button>
           </div>
-          </div>
         </CardContent>
       </Card>
   );
@@ -89,34 +85,24 @@ const CourseCard = ({ course }: { course: any }) => {
 
 const CourseList = () => {
   const { category, subcategory } = useParams<{ category: string; subcategory: string }>();
-  const [courses, setCourses] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  
+  //Fetch all active courses
+  const { data: allCourses, isLoading, error } = useActiveCourses();
 
-  // Convert URL slugs back to original category names for filtering
-  const categoryName = fromSlug(category || '');
-  const subcategoryName = fromSlug(subcategory || '');
+  //Filter client-side based on slugs
+  const courses = useMemo(() => {
+    if (!allCourses) return [];
+    const catName = fromSlug(category);
+    const subCatName = fromSlug(subcategory);
+    
+    return allCourses.filter(
+      (course) => course.category === catName && course.subcategory === subCatName
+    );
+  }, [allCourses, category, subcategory]);
 
-  useEffect(() => {
-    const fetchCoursesByCategory = async () => {
-      try {
-        const allCourses = await courseService.getActiveCourses();
-        const filteredCourses = allCourses.filter(
-          (course: Course) =>
-            course.category === categoryName &&
-            course.subcategory === subcategoryName
-        );
-        setCourses(filteredCourses);
-      } catch (error) {
-        setError('Failed to fetch courses');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCoursesByCategory();
-  }, [categoryName, subcategoryName]);
+  const subcategoryName = fromSlug(subcategory);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <main className="flex-1 bg-background flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -129,7 +115,7 @@ const CourseList = () => {
       <main className="flex-1 bg-background flex justify-center items-center h-64">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-          <p className="text-red-600">{error}</p>
+          <p className="text-red-600">{error.message}</p>
         </div>
       </main>
     );

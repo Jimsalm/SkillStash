@@ -10,22 +10,17 @@ import {
   deleteCourse,
   type Course,
   type CourseFilters,
+  incrementClaimedCount,
 } from '@/api/courseApi';
 import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
 
 // --- Queries ---
 
 // 1. Fetch Active Courses List
-export const useCourses = (params?: CourseFilters, instructorFilter?: string) => {
+export const useActiveCourses = (params?: CourseFilters) => {
   return useQuery<Course[], Error>({
-    queryKey: ['courses', 'active', params, instructorFilter],
+    queryKey: ['courses', 'active', params],
     queryFn: () => fetchCourses(params),
-    select: (data) => {
-      if (instructorFilter && instructorFilter !== 'all') {
-        return data.filter((c) => c.instructor === instructorFilter);
-      }
-      return data;
-    },
   });
 };
 
@@ -86,7 +81,7 @@ export const useCourse = (id?: string) => {
     queryFn: () => fetchCourseById(id!),
     enabled: !!id,
   });
-};
+}
 
 // --- Mutations ---
 
@@ -162,6 +157,27 @@ export const useDeleteCourse = () => {
     onError: (error) => {
       toast.error('Failed to delete course');
       console.error('Failed to delete course:', error);
+    },
+  });
+};
+
+//Public Claim Mutation
+export const useClaimCourse = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Course, Error, string>({
+    mutationFn: (id: string) => incrementClaimedCount(id),
+    onSuccess: (updatedCourse, id) => {
+      // Optimistically update the specific course cache
+      queryClient.setQueryData(['course', id], updatedCourse);
+      
+      // Invalidate active courses list to update counts in the list view
+      queryClient.invalidateQueries({ queryKey: ['courses', 'active'] });
+      
+      toast.success('Course claimed successfully!');
+    },
+    onError: (error) => {
+      toast.error('Failed to claim course: ' + error.message);
     },
   });
 };
