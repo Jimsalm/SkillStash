@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchDashboardStats, fetchRecentActivity, fetchTopCourses } from '@/api/dashboardApi';
-import type { DashboardStats, ActivityItem, TopCourse } from '@/api/dashboardApi';
+import { fetchDashboardStats, fetchRecentActivity, fetchTopCourses, fetchPublicStats } from '@/api/dashboardApi';
+import type { DashboardStats, ActivityItem, TopCourse, PublicStats } from '@/api/dashboardApi';
 
 // Hook for Stats
 export const useDashboardStats = () => {
@@ -31,3 +31,12 @@ export const useTopCourses = () => {
     refetchInterval: 1000 * 60 * 2,
   });
 };
+
+export const usePublicStats = () => {
+  return useQuery<PublicStats, Error>({
+    queryKey: ['public', 'stats'],
+    queryFn: fetchPublicStats,
+    staleTime: 1000 * 60 * 10, 
+    refetchInterval: 1000 * 60 * 2,
+  });
+}

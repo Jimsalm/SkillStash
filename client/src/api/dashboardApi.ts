@@ -29,6 +29,12 @@ export interface TopCourse {
     trend: string;
 }
 
+export interface PublicStats {
+  usedCoupons: number;
+  activeCoupons: number;
+  removedCoupons: number;
+}
+
 interface ApiResponse<T> {
     success: boolean;
     data: T;
@@ -146,4 +152,25 @@ export const fetchTopCourses = async (): Promise<TopCourse[]> => {
         claims: course.claimedCount,
         trend: course.claimedCount > 50 ? 'up' : 'down',
     }));
+};
+
+export const fetchPublicStats = async (): Promise<PublicStats> => {
+  const response = await api.get<ApiResponse<{
+    totalCourses: number;
+    activeCourses: number;
+    totalClicks: number;
+    archivedCourses?: number;
+  }>>('/dashboard/stats');
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Failed to fetch stats');
+  }
+
+  const data = response.data.data;
+
+  return {
+    usedCoupons: data.totalClicks,
+    activeCoupons: data.activeCourses,
+    removedCoupons: data.archivedCourses || 0,
+  };
 };

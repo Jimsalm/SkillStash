@@ -8,10 +8,15 @@ const router = express.Router();
 router.get('/stats', async (req: Request, res: Response) => {
     try {
         const totalCourses = await Course.countDocuments();
-        const activeCourses = await Course.countDocuments({ isActive: true });
+        
+        const activeCourses = await Course.countDocuments({ isActive: true, isArchived: false });
+        
+        const archivedCourses = await Course.countDocuments({ isArchived: true });
+
         const totalClicks = await Course.aggregate([
             { $group: { _id: null, total: { $sum: "$claimedCount" } } }
         ]);
+        
         const coursebyCategory = await Course.aggregate([
             { $group: { _id: "$category", count: { $sum: 1 } } },
             { $sort: { count: -1 } }
@@ -22,6 +27,7 @@ router.get('/stats', async (req: Request, res: Response) => {
             data: {
                 totalCourses,
                 activeCourses,
+                archivedCourses,
                 totalClicks: totalClicks[0]?.total || 0,
                 coursebyCategory
             },
