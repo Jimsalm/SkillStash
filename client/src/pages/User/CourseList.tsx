@@ -9,11 +9,15 @@ import type { Course } from '@/api/courseApi';
 
 const fromSlug = (slug?: string): string => {
   if (!slug) return '';
+  
+  if (slug.includes('user-experience-ux')) return 'User Experience (UX) Design';
+  if (slug.includes('user-interface-ui')) return 'User Interface (UI) Design';
+  if (slug.includes('3d-and-animation')) return '3D & Animation';
+  
   return slug
     .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
-    .replace(/And/g, '&');
+    .map(word => word === 'and' ? '&' : word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 };
 
 const CourseCard = ({ course }: { course: Course }) => {
