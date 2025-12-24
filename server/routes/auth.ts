@@ -34,10 +34,17 @@ router.post("/register", async (req: Request, res: Response) => {
       password: cryptedPassword,
     });
 
+    const jwtSecret = process.env.JWT_SECRET as string;
+    const token = jwt.sign(
+      { id: newUser._id, email: newUser.email },
+      jwtSecret,
+      { expiresIn: "7d" }
+    );
+
     const userWithoutPassword = newUser.toObject();
     delete (userWithoutPassword as any).password;
 
-    res.status(201).json({ msg: "User Registered", user: userWithoutPassword });
+    res.status(201).json({ msg: "User Registered", user: userWithoutPassword, token: token });
   } catch (error) {
     console.error("Registration error:", error);
     return res.status(500).json({ 
