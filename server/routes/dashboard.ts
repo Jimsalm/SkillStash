@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import Course from '../models/Course';
+import User from '../models/User';
 import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
@@ -22,6 +23,7 @@ router.get('/stats', authMiddleware, async (req: Request, res: Response) => {
             { $group: { _id: "$category", count: { $sum: 1 } } },
             { $sort: { count: -1 } }
         ]);
+        const totalUsers = await User.countDocuments();
 
         res.json({
             success: true,
@@ -30,7 +32,8 @@ router.get('/stats', authMiddleware, async (req: Request, res: Response) => {
                 activeCourses,
                 archivedCourses,
                 totalClicks: totalClicks[0]?.total || 0,
-                coursebyCategory
+                coursebyCategory,
+                totalUsers
             },
             message: 'Course statistics fetched successfully'
         });

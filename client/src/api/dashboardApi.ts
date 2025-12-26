@@ -33,6 +33,7 @@ export interface PublicStats {
   usedCoupons: number;
   activeCoupons: number;
   removedCoupons: number;
+  totalUsers: number;
 }
 
 interface ApiResponse<T> {
@@ -44,18 +45,15 @@ interface ApiResponse<T> {
 // --- API Functions ---
 
 export const fetchDashboardStats = async (): Promise<DashboardStats[]> => {
-    // 1. Get main stats
     const statResponse = await api.get<ApiResponse<{totalCourses: number, activeCourses: number, totalClicks: number}>>('/dashboard/stats');
     if (!statResponse.data.success) {
         throw new Error(statResponse.data.message || 'Failed to fetch dashboard stats');
     }
     const stats = statResponse.data.data;
 
-    // 2. Get today's stats
     const todayResponse = await api.get<ApiResponse<{ totalClaims: number}>>('/dashboard/stats/today');
     const todayClaims = todayResponse.data.success ? todayResponse.data.data.totalClaims : 0;
 
-    // 3. Map data to UI format
     return [
         {
             title: "Total Courses",
@@ -160,6 +158,7 @@ export const fetchPublicStats = async (): Promise<PublicStats> => {
     activeCourses: number;
     totalClicks: number;
     archivedCourses?: number;
+    totalUsers: number;
   }>>('/dashboard/stats');
 
   if (!response.data.success) {
@@ -172,5 +171,6 @@ export const fetchPublicStats = async (): Promise<PublicStats> => {
     usedCoupons: data.totalClicks,
     activeCoupons: data.activeCourses,
     removedCoupons: data.archivedCourses || 0,
+    totalUsers: data.totalUsers,
   };
 };

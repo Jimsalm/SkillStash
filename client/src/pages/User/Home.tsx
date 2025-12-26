@@ -16,6 +16,7 @@ const Home = () => {
     usedCoupons: 0,
     activeCoupons: 0,
     removedCoupons: 0,
+    totalUsers: 0
   }
 
   const features = [
@@ -118,7 +119,7 @@ const Home = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  5,000+
+                  {isLoading ? '...' : formatNumber(displayStats.totalUsers)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   People who have saved money with SkillStash.
