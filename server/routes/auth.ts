@@ -10,6 +10,7 @@ declare global {
       user?: {
         id: string;
         email?: string;
+        role?: string;
       };
     }
   }
@@ -36,7 +37,9 @@ router.post("/register", async (req: Request, res: Response) => {
 
     const jwtSecret = process.env.JWT_SECRET as string;
     const token = jwt.sign(
-      { id: newUser._id, email: newUser.email },
+      { id: newUser._id,
+        email: newUser.email,
+        role: newUser.role },
       jwtSecret,
       { expiresIn: "7d" }
     );
@@ -71,7 +74,9 @@ router.post("/login", async (req: Request, res: Response) => {
     const jwtSecret = process.env.JWT_SECRET as string;
 
     const token = jwt.sign(
-      { id: existingUser._id, email: existingUser.email },
+      { id: existingUser._id,
+        email: existingUser.email,
+        role: existingUser.role },
       jwtSecret,
       { expiresIn: "7d" }
     );
@@ -83,6 +88,7 @@ router.post("/login", async (req: Request, res: Response) => {
         id: existingUser._id,
         name: existingUser.name,
         email: existingUser.email,
+        role: existingUser.role,
       },
     });
   } catch (error) {

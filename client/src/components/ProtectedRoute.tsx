@@ -5,18 +5,17 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isAdmin } = useAuth();
-  const location = useLocation();
+  const { isAuthenticated, user, isAdmin } = useAuth()
 
-  console.log(`ProtectedRoute: Checking auth for path ${location.pathname}. isAdmin is:`, isAdmin); // <-- DEBUG LOG
-
-  if (!isAdmin) {
-    console.log('ProtectedRoute: Not admin, redirecting to login.'); // <-- DEBUG LOG
-    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/auth/login" replace />
   }
 
-  console.log('ProtectedRoute: User is admin, rendering children.'); // <-- DEBUG LOG
-  return children;
+  if (!isAdmin) {
+    return <Navigate to="/" replace />
+  }
+
+  return children
 };
 
 export default ProtectedRoute;

@@ -43,11 +43,12 @@ function App() {
         <Route path="login" element={<Login />} />
       </Route>
 
-      {/* Admin Login */}
-      <Route path="/admin/login" element={<AdminLoginPage />} />
-
       {/* Protected Admin Routes */}
-      <Route path="/admin" element={<AdminLayout />}>
+      <Route path="/admin" element={
+        <ProtectedRoute>
+          <AdminLayout />
+        </ProtectedRoute>
+      }>
         <Route index element={<AdminDashboardPage />} />
         <Route path="courses" element={<AdminCoursesPage />} />
         <Route path="courses/add" element={<AddEditCoursePage />} />

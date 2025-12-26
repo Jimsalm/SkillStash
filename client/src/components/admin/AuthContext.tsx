@@ -4,18 +4,19 @@ import { login, register, type AuthResponse, type LoginInput, type RegisterInput
 import { toast } from "sonner";
 
 interface AuthContextType {
-  user: { id: string; name: string; email: string } | null;
+  user: { id: string; name: string; email: string; role: "admin" | "user" } | null;
   token: string | null;
   loginAction: (data: LoginInput) => Promise<void>;
   registerAction: (data: RegisterInput) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; name: string; email: string; role: "admin" | "user" } | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
   const navigate = useNavigate();
 
@@ -38,7 +39,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setToken(res.token);
         setUser(res.user);
         toast.success("Logged in successfully!");
-        navigate("/"); 
+        
+        if (res.user.role === 'admin') {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+        
       }
     } catch (error: any) {
       const errorMsg = error.response?.data?.msg || error.response?.data?.error || "Login failed";
@@ -72,8 +79,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     toast.success("Logged out");
   };
 
+  const isAdmin = user?.role === "admin";
+
   return (
-    <AuthContext.Provider value={{ user, token, loginAction, registerAction, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, loginAction, registerAction, logout, isAuthenticated: !!token, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
