@@ -5,6 +5,7 @@ import { connectDB } from "./config/db";
 import coursesRouter from "./routes/course";
 import dashboardRouter from "./routes/dashboard";
 import authRouter from "./routes/auth";
+import reportsRouter from "./routes/reports";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/courses", coursesRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/reports", reportsRouter);
 
 connectDB();
 
