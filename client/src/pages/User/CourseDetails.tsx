@@ -7,6 +7,7 @@ import { ExternalLink, ArrowLeft, Users, Clock, Tag, Loader2, AlertCircle, Check
 import { useCourse, useClaimCourse } from '@/hooks/useCourses';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Course } from '@/api/courseApi';
+import ReportCourseButton from '@/components/ReportCourseButton';
 
 const CourseDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,13 +26,10 @@ const CourseDetails = () => {
     setIsClaiming(true);
     
     try {
-      // link immediately for better UX
       window.open(course.udemyUrl, '_blank', 'noopener,noreferrer');
       
-      // mutation to update backend stats
       await claimMutation.mutateAsync(id);
       
-      // Update UI state
       setIsClaimed(true);
     } catch (err) {
       console.error(err);
@@ -91,12 +89,16 @@ const CourseDetails = () => {
   return (
     <main className="flex-1 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Button variant="ghost" asChild className="mb-6">
-          <Link to="/courses/categories">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Categories
-          </Link>
-        </Button>
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="ghost" asChild>
+            <Link to="/courses/categories">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Categories
+            </Link>
+          </Button>
+          
+          <ReportCourseButton course={course} />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}

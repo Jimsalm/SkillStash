@@ -26,7 +26,7 @@ router.post('/', authMiddleware, async (req: Request, res: Response) => {
         if (existingReport) {
             return res.status(400).json({ 
                 success: false,
-                message: 'Course already reported' 
+                message: "Course already reported" 
             });
         }
 

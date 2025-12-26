@@ -34,7 +34,7 @@ export const useCreateReport = () => {
             if (error.message.includes("Course already reported")) {
                 toast.error("Course already reported");
             } else {
-                toast.error("Failed to create report");
+                toast.error("Course already reported");
             }
         },
     })
