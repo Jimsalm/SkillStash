@@ -14,5 +14,7 @@
       "@/*": ["./src/*"]
     },
     "moduleResolution": "node",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
   }
 }
