@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "buildCommand": "cd client && npm install && npm run build",
-  "outputDirectory": "client/dist",
   "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
     {
       "src": "server/api/index.ts",
       "use": "@vercel/node"
@@ -20,10 +25,6 @@
     {
       "source": "/api/(.*)",
       "destination": "/server/api/index.ts"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ]
 }
