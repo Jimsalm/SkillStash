@@ -18,16 +18,17 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Minimal server works!' });
+  res.json({ status: 'ok', message: 'Server is working!' });
 });
 
 app.post('/auth/login', (req, res) => {
   res.json({ message: 'Login endpoint reached', body: req.body });
 });
 
-// Changed from '/*' to '*'
-app.get('*', (req, res) => {
-  res.json({ message: 'Catch all route', path: req.path });
+app.post('/auth/register', (req, res) => {
+  res.json({ message: 'Register endpoint reached', body: req.body });
 });
+
+// Removed the catch-all route
 
 export default serverless(app);
