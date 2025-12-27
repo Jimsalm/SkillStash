@@ -12,26 +12,18 @@
       "use": "@vercel/python"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/scrape",
-      "dest": "server/api/python/index.py"
+      "source": "/api/scrape",
+      "destination": "/server/api/python/index.py"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "server/api/index.ts"
+      "source": "/api/(.*)",
+      "destination": "/server/api/index.ts"
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/(.*\\..+)",
-      "dest": "/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
