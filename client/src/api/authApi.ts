@@ -33,6 +33,8 @@ export interface ApiError {
 }
 
 export const login = async (credentials: LoginInput): Promise<AuthResponse> => {
+  console.log('API Base URL:', api.defaults.baseURL);
+  console.log('Full URL:', `${api.defaults.baseURL}/auth/login`);
   const response = await api.post<AuthResponse>("/auth/login", credentials);
   return response.data;
 };
