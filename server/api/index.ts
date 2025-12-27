@@ -18,7 +18,7 @@ const corsOptions = {
     'http://localhost:5173',
     'https://skillstash.vercel.app'
   ],
-  credentials: true, // This is important for cookies/sessions
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
@@ -28,15 +28,19 @@ app.options('(.*)', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const router = express.Router();
+
 // Routes
+router.get("/", (req, res) => { res.json({ msg: "API is running" }); });
 app.use("/courses", coursesRouter);
 app.use("/dashboard", dashboardRouter);
 app.use("/auth", authRouter);
 app.use("/reports", reportsRouter);
 
-connectDB().catch(err => {
-    console.error("Database connection failed", err);
-});
+app.use("/api", router);
+app.use("/", router);
+
+connectDB()
 
 if (require.main === module) {
   app.listen(port, () => {
