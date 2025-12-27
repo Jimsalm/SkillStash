@@ -25,7 +25,8 @@ app.post('/auth/login', (req, res) => {
   res.json({ message: 'Login endpoint reached', body: req.body });
 });
 
-app.get('/*', (req, res) => {
+// Changed from '/*' to '*'
+app.get('*', (req, res) => {
   res.json({ message: 'Catch all route', path: req.path });
 });
 
