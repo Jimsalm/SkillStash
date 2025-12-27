@@ -25,6 +25,10 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
+
 // Routes
 app.use("/api/courses", coursesRouter);
 app.use("/api/dashboard", dashboardRouter);
