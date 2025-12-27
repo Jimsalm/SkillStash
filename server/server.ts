@@ -41,4 +41,10 @@ app.use("/api/reports", reportsRouter);
 
 connectDB();
 
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+  });
+}
+
 export const handler = serverless(app);

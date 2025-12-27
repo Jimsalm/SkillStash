@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/scrape",
+      "destination": "/api/python/index.py"
+    },
+    {
       "source": "/api/:path*",
       "destination": "/api/server"
     }

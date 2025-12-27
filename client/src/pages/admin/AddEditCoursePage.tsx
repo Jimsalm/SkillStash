@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { api } from '@/lib/axios'
 import { useForm } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -130,11 +131,9 @@ const AddEditCoursePage = () => {
     setIsScraping(true);
     try {
       // This calls the Python server running on port 5000
-      const response = await fetch(`http://127.0.0.1:5000/scrape?url=${encodeURIComponent(targetUrl)}`);
+      const response = await api.get('/scrape', { params: { url: targetUrl } });
       
-      if (!response.ok) throw new Error('Failed to connect to scraper');
-      
-      const data = await response.json();
+      const data = response.data;
 
       if (data && !data.error) {
         const currentValues = form.getValues();
@@ -158,7 +157,7 @@ const AddEditCoursePage = () => {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error connecting to scraper. Is 'scraper_api.py' running?");
+      toast.error("Error connecting to scraper. Is 'scraper api' running?");
     } finally {
       setIsScraping(false);
     }
