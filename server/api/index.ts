@@ -1,62 +1,32 @@
 import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import { connectDB } from "../config/db";
-import coursesRouter from "../routes/course";
-import dashboardRouter from "../routes/dashboard";
-import authRouter from "../routes/auth";
-import reportsRouter from "../routes/reports";
 import serverless from "serverless-http";
 
-dotenv.config();
-
 const app = express();
-const port = process.env.PORT || 5001;
 
-const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-    const allowedOrigins = [
-      'http://localhost:5173',
-      'https://skillstash.vercel.app',
-      'https://skill-stash.vercel.app'
-    ];
-    
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  maxAge: 600 
-};
-
-app.use(cors(corsOptions));
-
-app.options('*', cors(corsOptions));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
+// Manual CORS
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
 });
 
-// Routes
-app.use("/courses", coursesRouter);
-app.use("/dashboard", dashboardRouter);
-app.use("/auth", authRouter);
-app.use("/reports", reportsRouter);
+app.use(express.json());
 
-connectDB();
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Minimal server works!' });
+});
 
-if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
-  });
-}
+app.post('/auth/login', (req, res) => {
+  res.json({ message: 'Login endpoint reached', body: req.body });
+});
+
+app.get('/*', (req, res) => {
+  res.json({ message: 'Catch all route', path: req.path });
+});
 
 export default serverless(app);
