@@ -29,10 +29,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-app.use("/api/courses", coursesRouter);
-app.use("/api/dashboard", dashboardRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/reports", reportsRouter);
+app.use("/courses", coursesRouter);
+app.use("/dashboard", dashboardRouter);
+app.use("/auth", authRouter);
+app.use("/reports", reportsRouter);
 
 connectDB().catch(err => {
     console.error("Database connection failed", err);
