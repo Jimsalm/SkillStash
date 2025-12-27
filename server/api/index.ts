@@ -41,15 +41,15 @@ app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
 
 // Routes
-app.use("/api/courses", coursesRouter);
-app.use("/api/dashboard", dashboardRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/reports", reportsRouter);
+app.use("/courses", coursesRouter);
+app.use("/dashboard", dashboardRouter);
+app.use("/auth", authRouter);
+app.use("/reports", reportsRouter);
 
 connectDB();
 
