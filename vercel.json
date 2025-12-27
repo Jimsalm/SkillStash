@@ -2,16 +2,6 @@
   "version": 2,
   "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
-  "builds": [
-    {
-      "src": "server/api/index.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "server/api/python/index.py",
-      "use": "@vercel/python"
-    }
-  ],
   "routes": [
     {
       "src": "/api/scrape",
@@ -28,6 +18,10 @@
     {
       "src": "/(.*\\..+)",
       "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
