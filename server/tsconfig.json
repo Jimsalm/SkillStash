@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "typeRoots": ["./src/types", "./node_modules/@types/"]
   },
-  "include": ["**/*.ts", "api/index.js"]
+  "include": ["**/*.ts", "api/index.ts"]
 }
