@@ -4,12 +4,8 @@
   "outputDirectory": "client/dist",
   "routes": [
     {
-      "src": "/api/scrape",
-      "dest": "server/api/python/index.py"
-    },
-    {
       "src": "/api/(.*)",
-      "dest": "server/api/index.ts"
+      "dest": "/api/index.ts"
     },
     {
       "src": "/assets/(.*)",
