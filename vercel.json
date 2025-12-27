@@ -2,22 +2,19 @@
   "version": 2,
   "buildCommand": "cd client && npm install && npm run build",
   "outputDirectory": "client/dist",
+  "builds": [
+    {
+      "src": "api/server.ts",
+      "use": "@vercel/node"
+    }
+  ],
   "routes": [
     {
-      "src": "/api/scrape",
-      "dest": "server/api/python/index.py"
-    },
-    {
       "src": "/api/(.*)",
-      "dest": "server/api/index.ts"
+      "dest": "/api/server.ts"
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/(.*\\..+)",
-      "dest": "/$1"
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
