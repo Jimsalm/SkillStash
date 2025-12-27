@@ -15,7 +15,10 @@ const port = process.env.PORT || 5001;
 
 app.use(
   cors({ 
-    origin: true,
+    origin: [
+      'http://localhost:5173',
+      'https://skillstash.vercel.app'
+    ],
     credentials: true
   })
 );
