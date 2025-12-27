@@ -5,8 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node-dev --respawn --transpile-only api/index.ts",
-    "build": "tsc",
-    "start": "node dist/api/index.js"
+    "build": "mkdir -p public && echo '<h1>Server is Running</h1>' > public/index.html",
+    "start": "node api/index.ts"
   },
   "keywords": [],
   "author": "",
