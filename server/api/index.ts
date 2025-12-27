@@ -36,4 +36,4 @@ if (require.main === module) {
   });
 }
 
-export const handler = serverless(app);
+export default serverless(app);
