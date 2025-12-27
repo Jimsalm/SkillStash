@@ -6,6 +6,7 @@ import coursesRouter from "./routes/course";
 import dashboardRouter from "./routes/dashboard";
 import authRouter from "./routes/auth";
 import reportsRouter from "./routes/reports";
+import serverless from "serverless-http";
 
 dotenv.config();
 
@@ -13,9 +14,20 @@ const app = express();
 const port = process.env.PORT || 5001;
 
 app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
+  cors({ 
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:5173",
+        process.env.VERCEL_URL
+      ];
+      if(!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true
   })
 );
 app.use(express.json());
@@ -29,10 +41,4 @@ app.use("/api/reports", reportsRouter);
 
 connectDB();
 
-// Middlewares
-app.use(cors()); // Enable CORS for all routes
-app.use(express.json()); // Enable parsing of JSON bodies
-
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
-});
+export const handler = serverless(app);
