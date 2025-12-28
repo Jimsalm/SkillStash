@@ -13,34 +13,33 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5001;
 
-const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'https://skillstash.vercel.app'
-  ],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
-app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
-
+app.use(
+  cors({ 
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "https://skillstash.vercel.app"
+      ];
+      if(!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const router = express.Router();
-
 // Routes
-router.get("/", (req, res) => { res.json({ msg: "API is running" }); });
-app.use("/courses", coursesRouter);
-app.use("/dashboard", dashboardRouter);
-app.use("/auth", authRouter);
-app.use("/reports", reportsRouter);
+app.use("/api/courses", coursesRouter);
+app.use("/api/dashboard", dashboardRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/reports", reportsRouter);
 
-app.use("/api", router);
-app.use("/", router);
-
-connectDB()
+connectDB();
 
 if (require.main === module) {
   app.listen(port, () => {
@@ -48,4 +47,6 @@ if (require.main === module) {
   });
 }
 
-export default serverless(app);
+export const handler = serverless(app);
+
+export default handler;
