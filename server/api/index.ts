@@ -6,7 +6,6 @@ import coursesRouter from "../routes/course";
 import dashboardRouter from "../routes/dashboard";
 import authRouter from "../routes/auth";
 import reportsRouter from "../routes/reports";
-import serverless from "serverless-http";
 
 dotenv.config();
 
@@ -56,6 +55,4 @@ if (require.main === module) {
   });
 }
 
-export const handler = serverless(app);
-
-export default handler;
+export default app;
