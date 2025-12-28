@@ -11,6 +11,8 @@ import {
   type Course,
   type CourseFilters,
   incrementClaimedCount,
+  type ScrapedCourse,
+  scrapeCourseMetadata
 } from '@/api/courseApi';
 import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
 import { useAuth } from '@/components/admin/AuthContext';
@@ -186,6 +188,15 @@ export const useClaimCourse = () => {
     },
     onError: (error) => {
       toast.error('Failed to claim course: ' + error.message);
+    },
+  });
+};
+
+export const useScrapeCourse = () => {
+  return useMutation<ScrapedCourse, Error, string>({
+    mutationFn: (url: string) => scrapeCourseMetadata(url),
+    onError: (error) => {
+      console.error("Scraper failed:", error);
     },
   });
 };

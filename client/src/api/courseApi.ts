@@ -29,6 +29,19 @@ export interface CourseFilters {
   search?: string;
 }
 
+export interface ScrapedCourse {
+  title: string;
+  description: string;
+  instructor: string;
+  technologies: string;
+  originalPrice: string;
+  discountedPrice: string;
+  imageUrl: string;
+  udemyUrl: string;
+  category: string;
+  subcategory: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -125,4 +138,11 @@ export const fetchArchivedCourses = async (): Promise<Course[]> => {
     throw new Error(response.data.message || 'Failed to fetch archived courses');
   }
   return response.data.data;
+};
+
+export const scrapeCourseMetadata = async (url: string): Promise<ScrapedCourse> => {
+  const response = await api.get<ScrapedCourse>('/scrape', { 
+    params: { url } 
+  });
+  return response.data;
 };

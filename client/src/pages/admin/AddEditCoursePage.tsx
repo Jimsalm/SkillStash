@@ -3,7 +3,7 @@ import { api } from '@/lib/axios'
 import { useForm } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCourse, useUpsertCourse } from '@/hooks/useCourses';
+import { useCourse, useUpsertCourse, useScrapeCourse } from '@/hooks/useCourses';
 import {
   Form,
   FormControl,
@@ -60,10 +60,8 @@ const AddEditCoursePage = () => {
   const navigate = useNavigate();
   const isEditMode = Boolean(id);
   const [activeTab, setActiveTab] = useState('basic-info');
-  
-  // State for scraper loading
-  const [isScraping, setIsScraping] = useState(false);
 
+  const { mutateAsync: scrapeCourse, isPending: isScraping } = useScrapeCourse();
   const { data: courseData, isLoading, error } = useCourse(id);
   const submitMutation = useUpsertCourse();
 
@@ -128,14 +126,11 @@ const AddEditCoursePage = () => {
     
     if (!targetUrl) return;
 
-    setIsScraping(true);
     try {
       // This calls the Python server running on port 5000
-      const response = await api.get('/scrape', { params: { url: targetUrl } });
-      
-      const data = response.data;
+      const data = await scrapeCourse(targetUrl);
 
-      if (data && !data.error) {
+      if (data) {
         const currentValues = form.getValues();
         
         form.reset({
@@ -149,6 +144,7 @@ const AddEditCoursePage = () => {
           image: data.imageUrl || currentValues.image,
           udemyUrl: data.udemyUrl || targetUrl, 
           category: data.category || currentValues.category, 
+          subcategory: data.subcategory || currentValues.subcategory, 
         });
 
         toast.success("Course details auto-filled successfully!");
@@ -158,8 +154,6 @@ const AddEditCoursePage = () => {
     } catch (err) {
       console.error(err);
       toast.error("Error connecting to scraper. Is 'scraper api' running?");
-    } finally {
-      setIsScraping(false);
     }
   };
 
