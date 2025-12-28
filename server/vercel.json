@@ -1,6 +1,10 @@
 {
   "version": 2,
   "rewrites": [
+    { 
+      "source": "/api/scrape", 
+      "destination": "/api/python/index.py" 
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.ts"
