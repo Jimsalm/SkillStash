@@ -106,7 +106,7 @@ def scrape_discudemy_course(url):
     udemy_link_element = soup.find('a', class_='discBtn')
     if udemy_link_element and 'href' in udemy_link_element.attrs:
         intermediate_path = udemy_link_element['href']
-        intermediate_url = f"https://www.discudemy.com{intermediate_path}" if intermediate_path.startswith('/') else intermediate_path
+        intermediate_url = f"https://www.couponami.com{intermediate_path}" if intermediate_path.startswith('/') else intermediate_path
         try:
             go_response = requests.get(intermediate_url, headers=headers, timeout=10) # Added timeout
             soup_go = BeautifulSoup(go_response.text, 'html.parser')
