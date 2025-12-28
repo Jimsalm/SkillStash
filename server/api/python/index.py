@@ -18,7 +18,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 app = Flask(__name__)
 # Allow CORS. Since this is a data scraper, strict credential handling isn't usually required,
 # but we enable it broadly.
-CORS(app) 
+CORS(app, resources={r"/api/*": {"origins": ["https://skillstash.vercel.app", "http://localhost:5173"]}}, supports_credentials=True)
 
 SYSTEM_PROMPT = """
 You are an intelligent assistant for an education platform. 
