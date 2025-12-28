@@ -39,6 +39,15 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/reports", reportsRouter);
 
+app.use("*", (req, res) => {
+  console.log(`[404 ERROR] Method: ${req.method}, Url: ${req.url}, OriginalUrl: ${req.originalUrl}`);
+  res.status(404).json({
+    msg: "Route not found",
+    debug_url: req.url,
+    debug_originalUrl: req.originalUrl
+  });
+});
+
 connectDB();
 
 if (require.main === module) {
