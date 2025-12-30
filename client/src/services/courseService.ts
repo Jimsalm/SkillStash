@@ -23,7 +23,7 @@ export interface Course {
 }
 
 export const courseService = {
-  // Fetch all courses
+  // Test commit
   getAllCourses: async (): Promise<Course[]> => {
     try {
       const response = await fetch(`${API_URL}/courses`);
