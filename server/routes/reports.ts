@@ -60,7 +60,6 @@ router.get('/', authMiddleware, async (req: Request, res: Response) => {
 
         const reports = await CourseReport.find(query)
             .sort({ createdAt: -1 })
-            .populate('courseId');
 
         res.json({
             success: true,

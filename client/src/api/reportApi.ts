@@ -2,7 +2,7 @@ import { api } from "@/lib/axios";
 
 export interface CourseReport {
     _id: string;
-    courseId: string;
+    courseId: string | { _id: string; [key: string]: any };
     courseTitle: string;
     reason: 'invalid_link' | 'expired' | 'fake_course' | 'other';
     reportedBy?: string;

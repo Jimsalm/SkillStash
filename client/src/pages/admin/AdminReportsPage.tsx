@@ -115,8 +115,10 @@ const AdminReportsPage = () => {
     await updateStatusMutation.mutateAsync({ id: reportId, status: newStatus });
   };
 
-  const handleViewCourse = (courseId: string) => {
-    navigate(`/admin/courses/edit/${courseId}`);
+  const handleViewCourse = (courseId: string | any) => {
+    // Extract the actual ID if it's an object
+    const id = typeof courseId === 'object' ? courseId._id || courseId.toString() : courseId;
+    navigate(`/admin/courses/edit/${id}`);
   };
 
   const handleDeleteReport = async () => {
@@ -351,7 +353,9 @@ const AdminReportsPage = () => {
                     <div className="max-w-[300px]">
                       <p className="font-medium truncate">{report.courseTitle}</p>
                       <p className="text-xs text-muted-foreground">
-                        ID: {String(report.courseId).slice(0, 8)}...
+                        ID: {typeof report.courseId === 'object' 
+                          ? (report.courseId._id || report.courseId.toString()).slice(0, 8)
+                          : String(report.courseId).slice(0, 8)}...
                       </p>
                     </div>
                   </TableCell>
