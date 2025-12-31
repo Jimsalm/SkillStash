@@ -26,6 +26,7 @@ import AdminArchivedCoursesPage from "./pages/admin/AdminArchivedCoursesPage";
 import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import AuthLayout from "./components/AuthLayout";
 import Login from "./pages/Auth/Login";
+import NotFoundPage from "./pages/Error/NotFoundPage";
 
 // Wrapper component to set page title
 const Page = ({ title, children }: { title: string; children: React.ReactNode }) => {
@@ -87,9 +88,9 @@ function App() {
       <Route
         path="*"
         element={
-          <Page title="Page Not Found">
-            <h1 className="text-center mt-8 text-2xl">404 - Page Not Found</h1>
-          </Page>
+            <Page title="Page Not Found">
+              <NotFoundPage />
+            </Page>
         }
       />
     </Routes>
