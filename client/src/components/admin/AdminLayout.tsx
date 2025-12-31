@@ -3,7 +3,6 @@ import { AdminSidebar } from './AdminSidebar';
 import { useAuth } from './AuthContext';
 
 const AdminLayout = () => {
-    console.log('AdminLayout is rendering!');
   const { logout } = useAuth();
 
   return (

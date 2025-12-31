@@ -1,18 +1,24 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, PlusCircle, LogOut, BookMarked, Sun, Moon, Archive } from 'lucide-react';
+import { LayoutDashboard, BookOpen, PlusCircle, LogOut, BookMarked, Sun, Moon, Archive, Flag } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/components/theme-provider';
+import { useReports } from '@/hooks/useReports';
 
 const AdminSidebar = () => {
   const { logout } = useAuth();
   const { setTheme, theme } = useTheme();
+
+  const { data: reports } = useReports({ status: 'pending'})
+  const pendingCount = reports?.length || 0;
 
   const navItems = [
     { to: '/admin/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/admin/courses', label: 'All Courses', icon: BookOpen },
     { to: '/admin/courses/add', label: 'Add New Course', icon: PlusCircle },
     { to: '/admin/courses/archived', label: 'Archived Courses', icon: Archive },
+    { to: '/admin/reports', label: 'Course Reports', icon: Flag, badge: pendingCount}
   ];
 
   return (
@@ -45,7 +51,14 @@ const AdminSidebar = () => {
             }
           >
             <item.icon className="h-5 w-5" />
-            {item.label}
+            <span className='flex-1'>{item.label}</span>
+            {item.badge !== undefined && item.badge > 0 && (
+              <Badge
+                variant="destructive"
+                className='h-5 min-w-5 flex items-center justify-center text-xs px-1.5'>
+                  {item.badge}
+                </Badge>
+            )}
           </NavLink>
         ))}
       </nav>
