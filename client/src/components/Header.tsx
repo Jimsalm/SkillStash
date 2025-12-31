@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { Menu, BookMarked, Sun, Moon, LogOut, User, LogIn } from 'lucide-react';
+import { Menu, Sun, Moon, LogOut, User, LogIn } from 'lucide-react';
+import Logo from '@/assets/logo.svg';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -65,7 +66,7 @@ const Header = () => {
         {/* Logo */}
         <div className="flex items-center">
           <Link to="/" className="flex items-center space-x-2">
-            <BookMarked className="h-6 w-6 text-primary" />
+            <img src={Logo} alt="SkillStash Logo" className="h-8 w-auto" />
             <span className="font-bold sm:inline-block text-lg">
               SkillStash
             </span>
@@ -113,7 +114,7 @@ const Header = () => {
                       onClick={() => setIsOpen(false)} 
                       className="flex items-center space-x-2"
                     >
-                      <BookMarked className="h-6 w-6 text-primary" />
+                      <img src={Logo} alt="SkillStash Logo" className="h-8 w-auto" />
                       <span className="font-bold text-lg">SkillStash</span>
                     </Link>
                   </SheetTitle>

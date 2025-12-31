@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, BookOpen, PlusCircle, LogOut, BookMarked, Sun, Moon, Archive, Flag } from 'lucide-react';
+import Logo from '@/assets/logo.svg'
 import { useAuth } from './AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +28,7 @@ const AdminSidebar = () => {
       {/* Header */}
       <div className="p-6 border-b">
         <div className="flex items-center gap-2">
-          <BookMarked className="h-6 w-6 text-primary" />
+          <img src={Logo} alt="SkillStash Logo" className="h-8 w-auto" />
           <div>
             <h2 className="text-lg font-bold">SkillStash</h2>
             <p className="text-xs text-muted-foreground">Admin Panel</p>
