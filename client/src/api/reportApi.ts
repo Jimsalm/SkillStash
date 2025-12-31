@@ -57,4 +57,13 @@ export const updateReportStatus = async (id: string, status: 'pending' | 'review
 };
 
 
+// Deletes a report.
+export const deleteReport = async (id: string): Promise<void> => {
+  const response = await api.delete<ApiResponse<CourseReport>>(`/reports/${id}`);
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Failed to delete report');
+  }
+};
+
+
 

@@ -3,6 +3,7 @@ import {
     fetchReports, 
     createReport, 
     updateReportStatus,
+    deleteReport,
     type ReportFilters,
     type CourseReport,
     type CreateReportData,
@@ -56,3 +57,20 @@ export const useUpdateReportStatus = () => {
         },
     })
 };
+
+// Delete a report
+export const useDeleteReport = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation<void, Error, string>({
+        mutationFn: deleteReport,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['reports'] });
+            toast.success('Report delete successfully')
+        },
+        onError: (error) => {
+            toast.error('Failed to delete report');
+            console.error('Failed to delete report', error);
+        }
+    })
+}

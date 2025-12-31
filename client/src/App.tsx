@@ -19,6 +19,7 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminCoursesPage from "./pages/admin/AdminCoursesPage";
 import AddEditCoursePage from "./pages/admin/AddEditCoursePage";
 import AdminArchivedCoursesPage from "./pages/admin/AdminArchivedCoursesPage";
+import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import AuthLayout from "./components/AuthLayout";
 import Login from "./pages/Auth/Login";
 
@@ -54,6 +55,7 @@ function App() {
         <Route path="courses/add" element={<AddEditCoursePage />} />
         <Route path="courses/edit/:id" element={<AddEditCoursePage />} />
         <Route path="courses/archived" element={<AdminArchivedCoursesPage />} />
+        <Route path="reports" element={<AdminReportsPage />} />
       </Route>
 
       {/* 404 Fallback */}
