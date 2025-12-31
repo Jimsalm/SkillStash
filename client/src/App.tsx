@@ -1,9 +1,13 @@
 import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // --- Layouts ---
 import PublicLayout from "./components/PublicLayout";
 import AdminLayout from "@/components/admin/AdminLayout";
+
+// --- Hooks ---
+import usePageTitle from "./hooks/usePageTitle";
 
 // --- Public Pages ---
 import Home from "./pages/User/Home";
@@ -23,25 +27,46 @@ import AdminReportsPage from "./pages/admin/AdminReportsPage";
 import AuthLayout from "./components/AuthLayout";
 import Login from "./pages/Auth/Login";
 
+// Wrapper component to set page title
+const Page = ({ title, children }: { title: string; children: React.ReactNode }) => {
+  usePageTitle(title);
+  return <>{children}</>;
+};
+
 function App() {
   return (
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<PublicLayout />}>
-        <Route index element={<Home />} />
+        <Route index element={<Page title="Home"><Home /></Page>} />
         <Route
           path="/courses/:category/:subcategory"
-          element={<CourseList />}
+          element={<Page title="Courses"><CourseList /></Page>}
         />
-        <Route path="/courses/categories" element={<CourseCategory />} />
-        <Route path="about" element={<About />} />
-        <Route path="/courses/details/:id" element={<CourseDetails />} />
+        <Route 
+          path="/courses/categories" 
+          element={<Page title="Course Categories"><CourseCategory /></Page>} 
+        />
+        <Route 
+          path="about" 
+          element={<Page title="About Us"><About /></Page>} 
+        />
+        <Route 
+          path="/courses/details/:id" 
+          element={<Page title="Course Details"><CourseDetails /></Page>} 
+        />
       </Route>
 
-      {/* Para sa login at Register*/}
+      {/* Authentication Routes */}
       <Route path="/auth" element={<AuthLayout />}>
-        <Route path="register" element={<Register />} />
-        <Route path="login" element={<Login />} />
+        <Route 
+          path="register" 
+          element={<Page title="Create Account"><Register /></Page>} 
+        />
+        <Route 
+          path="login" 
+          element={<Page title="Login"><Login /></Page>} 
+        />
       </Route>
 
       {/* Protected Admin Routes */}
@@ -50,19 +75,21 @@ function App() {
           <AdminLayout />
         </ProtectedRoute>
       }>
-        <Route index element={<AdminDashboardPage />} />
-        <Route path="courses" element={<AdminCoursesPage />} />
-        <Route path="courses/add" element={<AddEditCoursePage />} />
-        <Route path="courses/edit/:id" element={<AddEditCoursePage />} />
-        <Route path="courses/archived" element={<AdminArchivedCoursesPage />} />
-        <Route path="reports" element={<AdminReportsPage />} />
+        <Route index element={<Page title="Admin Dashboard"><AdminDashboardPage /></Page>} />
+        <Route path="courses" element={<Page title="Manage Courses"><AdminCoursesPage /></Page>} />
+        <Route path="courses/add" element={<Page title="Add New Course"><AddEditCoursePage /></Page>} />
+        <Route path="courses/edit/:id" element={<Page title="Edit Course"><AddEditCoursePage /></Page>} />
+        <Route path="courses/archived" element={<Page title="Archived Courses"><AdminArchivedCoursesPage /></Page>} />
+        <Route path="reports" element={<Page title="Reports"><AdminReportsPage /></Page>} />
       </Route>
 
       {/* 404 Fallback */}
       <Route
         path="*"
         element={
-          <h1 className="text-center mt-8 text-2xl">404 - Page Not Found</h1>
+          <Page title="Page Not Found">
+            <h1 className="text-center mt-8 text-2xl">404 - Page Not Found</h1>
+          </Page>
         }
       />
     </Routes>
