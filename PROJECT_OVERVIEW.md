@@ -9,7 +9,7 @@ SkillStash is a full-stack web application designed to help users manage and tra
 - **Framework**: React 19 with TypeScript
 - **Build Tool**: Vite
 - **State Management**: React Query (TanStack Query)
-- **UI Components**: Shadcn/Radix UI Primitives with custom styling
+- **UI Components**: Radix UI Primitives with custom styling
 - **Styling**: TailwindCSS with custom theming
 - **Form Handling**: React Hook Form with Zod validation
 - **Routing**: React Router v6
