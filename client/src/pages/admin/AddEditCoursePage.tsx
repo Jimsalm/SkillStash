@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
@@ -32,24 +32,25 @@ import {
   BookOpen, 
   DollarSign, 
   Tag, 
-  Calendar, 
   User, 
   Image as ImageIcon,
   Link as LinkIcon,
   FolderOpen,
-  CheckCircle2,
-  AlertCircle,
   ArrowLeft,
   ArrowRight,
   Loader2,
-  Wand2
+  Wand2,
+  Layers,
+  AlertCircle
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { courseFormSchema, categoriesData } from '@/lib/schemas/courseFormSchema';
 import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
 import { toast } from 'sonner';
+import BatchCourseImport from '@/components/admin/BatchCourseImport';
 
-// Helper to clean price strings like "$89.99" to number 89.99
+// --- Helpers ---
+
 const cleanPrice = (priceStr: string | undefined | null): number => {
   if (!priceStr) return 0;
   return parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
@@ -85,7 +86,6 @@ const AddEditCoursePage = () => {
     },
   });
 
-  // Reset form when data loads
   useEffect(() => {
     if (courseData) {
       let formattedDate = '';
@@ -111,7 +111,6 @@ const AddEditCoursePage = () => {
     }
   }, [courseData, form]);
 
-  // Submit Handler
   async function onSubmit(values: CourseFormValues) {
     submitMutation.mutate({ isEdit: isEditMode, id, values }, {
       onSuccess: () => {
@@ -120,14 +119,13 @@ const AddEditCoursePage = () => {
     });
   }
 
-  // --- AUTO-FILL LOGIC ---
   const handleAutoFill = async () => {
     const targetUrl = window.prompt("Enter the DiscUdemy URL to scrape:", form.getValues('udemyUrl'));
     
     if (!targetUrl) return;
 
     try {
-      // This calls the Python server running on port 5000
+      // This calls the Python server running on port 5000      
       const data = await scrapeCourse(targetUrl);
 
       if (data) {
@@ -153,7 +151,7 @@ const AddEditCoursePage = () => {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Error connecting to scraper. Is 'scraper api' running?");
+      toast.error("Error connecting to scraper.");
     }
   };
 
@@ -225,9 +223,9 @@ const AddEditCoursePage = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 max-w-8xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Add New Course</h1>
+            <h1 className="text-3xl font-bold">Course Management</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Share amazing course deals with the community
+              {isEditMode ? 'Edit course details' : 'Add a new course or import in bulk'}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -239,32 +237,35 @@ const AddEditCoursePage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* LEFT COLUMN */}
           <div className="lg:col-span-2">
             <Card>
               <CardContent className="pt-6">
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
-                      <TabsList className="grid w-full grid-cols-5">
-                        <TabsTrigger value="basic-info">Basic Info</TabsTrigger>
-                        <TabsTrigger value="pricing">Pricing</TabsTrigger>
-                        <TabsTrigger value="media">Media</TabsTrigger>
-                        <TabsTrigger value="deal-details">Deal Details</TabsTrigger>
-                        <TabsTrigger value="category">Category</TabsTrigger>
+                      <TabsList className="grid w-full grid-cols-6 h-auto">
+                        <TabsTrigger value="basic-info" className="text-xs py-2">Basic Info</TabsTrigger>
+                        <TabsTrigger value="pricing" className="text-xs py-2">Pricing</TabsTrigger>
+                        <TabsTrigger value="media" className="text-xs py-2">Media</TabsTrigger>
+                        <TabsTrigger value="deal-details" className="text-xs py-2">Deal</TabsTrigger>
+                        <TabsTrigger value="category" className="text-xs py-2">Category</TabsTrigger>
+                        <TabsTrigger value="batch-import" className="text-xs py-2">
+                          <Layers className="h-3 w-3 mr-1" /> Batch
+                        </TabsTrigger>
                       </TabsList>
                       
-                      {/* Basic Info Tab */}
                       <TabsContent value="basic-info" className="space-y-4 mt-4">
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 text-lg font-semibold">
-                            <BookOpen className="h-5 w-5 text-primary" />
+                            <BookOpen className="h-5 w-5 text-primary" /> 
                             Course Information
                           </div>
                           <Separator />
-                          
-                          <FormField
-                            control={form.control}
-                            name="title"
+
+                          <FormField 
+                            control={form.control} 
+                            name="title" 
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Course Title *</FormLabel>
@@ -275,10 +276,10 @@ const AddEditCoursePage = () => {
                               </FormItem>
                             )}
                           />
-                          
-                          <FormField
-                            control={form.control}
-                            name="description"
+
+                          <FormField 
+                            control={form.control} 
+                            name="description" 
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Description *</FormLabel>
@@ -291,13 +292,13 @@ const AddEditCoursePage = () => {
                           />
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="instructor"
+                            <FormField 
+                              control={form.control} 
+                              name="instructor" 
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel className="flex items-center gap-2">
-                                    <User className="h-4 w-4" />
+                                    <User className="h-4 w-4" /> 
                                     Instructor *
                                   </FormLabel>
                                   <FormControl>
@@ -307,10 +308,10 @@ const AddEditCoursePage = () => {
                                 </FormItem>
                               )}
                             />
-                            
-                            <FormField
-                              control={form.control}
-                              name="claimedCount"
+
+                            <FormField 
+                              control={form.control} 
+                              name="claimedCount" 
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>Students Claimed</FormLabel>
@@ -323,68 +324,67 @@ const AddEditCoursePage = () => {
                             />
                           </div>
 
-                          <FormField
-                            control={form.control}
-                            name="software"
+                          <FormField 
+                            control={form.control} 
+                            name="software" 
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Technologies/Tools *</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="React, Redux, Next.js" {...field} onChange={(e) => {
-                                      field.onChange(e);
-                                      const techs = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
-                                      setSoftwarePreview(techs);
-                                    }} 
-                                  />
-                                </FormControl>
-                                {softwarePreview.length > 0 && (
-                                  <div className="flex flex-wrap gap-2 mt-2">
-                                    {softwarePreview.map((tech, idx) => (
-                                      <Badge key={idx} variant="secondary">{tech}</Badge>
-                                    ))}
-                                  </div>
-                                )}
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            <FormItem>
+                              <FormLabel>Technologies/Tools *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="React, Redux, Next.js" {...field} onChange={(e) => {
+                                  field.onChange(e);
+                                  const techs = e.target.value.split(',').map(t => t.trim()).filter(Boolean);
+                                  setSoftwarePreview(techs);
+                                }} 
+                                />
+                              </FormControl>
+                              {softwarePreview.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {softwarePreview.map((tech, idx) => 
+                                    <Badge key={idx} variant="secondary">{tech}</Badge>
+                                  )}
+                                </div>
+                              )}
+                              <FormMessage />
+                            </FormItem>
+                          )} 
                           />
                         </div>
                       </TabsContent>
                       
-                      {/* Pricing Tab */}
                       <TabsContent value="pricing" className="space-y-4 mt-4">
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 text-lg font-semibold">
-                            <DollarSign className="h-5 w-5 text-primary" />
+                            <DollarSign className="h-5 w-5 text-primary" /> 
                             Pricing
                           </div>
                           <Separator />
                           <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="originalPrice"
+                            <FormField 
+                              control={form.control} 
+                              name="originalPrice" 
                               render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Original Price ($) *</FormLabel>
-                                  <FormControl>
-                                    <Input type="number" step="0.01" placeholder="89.99" {...field} onChange={e => field.onChange(Number(e.target.value))} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
+                              <FormItem>
+                                <FormLabel>Original Price ($) *</FormLabel>
+                                <FormControl>
+                                  <Input type="number" step="0.01" placeholder="89.99" {...field} onChange={e => field.onChange(Number(e.target.value))} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )} 
                             />
                             <FormField
-                              control={form.control}
-                              name="discountedPrice"
+                              control={form.control} 
+                              name="discountedPrice" 
                               render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Discounted Price ($) *</FormLabel>
-                                  <FormControl>
-                                    <Input type="number" step="0.01" placeholder="14.99" {...field} onChange={e => field.onChange(Number(e.target.value))} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
+                              <FormItem>
+                                <FormLabel>Discounted Price ($) *</FormLabel>
+                                <FormControl>
+                                  <Input type="number" step="0.01" placeholder="14.99" {...field} onChange={e => field.onChange(Number(e.target.value))} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )} 
                             />
                           </div>
                           {(savings >= 0 && originalPrice > 0) && (
@@ -397,70 +397,87 @@ const AddEditCoursePage = () => {
                         </div>
                       </TabsContent>
                       
-                      {/* Media Tab */}
                       <TabsContent value="media" className="space-y-4 mt-4">
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 text-lg font-semibold">
-                            <LinkIcon className="h-5 w-5 text-primary" />
+                            <ImageIcon className="h-5 w-5 text-primary" /> 
                             Media & Links
                           </div>
                           <Separator />
-                          
+
                           <FormField
-                            control={form.control}
-                            name="image"
+                            control={form.control} 
+                            name="image" 
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Course Image URL *</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="https://img-c.udemycdn.com/course/..." {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            <FormItem>
+                              <FormLabel>Course Image URL *</FormLabel>
+                              <FormControl>
+                                <Input placeholder="https://img-c.udemycdn.com/course/..." {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} 
                           />
-                          
+
                           <FormField
-                            control={form.control}
-                            name="udemyUrl"
+                            control={form.control} 
+                            name="udemyUrl" 
                             render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Udemy Course URL *</FormLabel>
-                                <div className="flex gap-2">
-                                  <FormControl className="flex-1">
-                                    <Input placeholder="https://www.udemy.com/course/..." {...field} />
-                                  </FormControl>
-                                  <Button type="button" variant="secondary" onClick={handleAutoFill} disabled={isScraping} className="whitespace-nowrap">
-                                    {isScraping ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Wand2 className="h-4 w-4 mr-2" />Auto-fill</>}
-                                  </Button>
-                                </div>
-                                <FormDescription>
-                                  Click Auto-fill and paste a DiscUdemy link.
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                            )}
+                            <FormItem>
+                              <FormLabel>Udemy Course URL *</FormLabel>
+                              <div className="flex gap-2">
+                                <FormControl className="flex-1">
+                                  <Input placeholder="https://www.udemy.com/course/..." {...field} />
+                                </FormControl>
+                                <Button type="button" variant="secondary" onClick={handleAutoFill} disabled={isScraping} className="whitespace-nowrap">
+                                  {isScraping ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Wand2 className="h-4 w-4 mr-2" />Auto-fill</>}
+                                </Button>
+                              </div>
+                              <FormDescription>
+                                Click Auto-fill and paste a DiscUdemy link.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )} 
                           />
                         </div>
                       </TabsContent>
                       
-                      {/* Deal Details Tab */}
                       <TabsContent value="deal-details" className="space-y-4 mt-4">
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 text-lg font-semibold"><Tag className="h-5 w-5 text-primary" /> Deal Details</div>
                           <Separator />
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="couponCode" render={({ field }) => (
-                              <FormItem><FormLabel>Coupon Code</FormLabel><FormControl><Input placeholder="REACT2024" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="expiresAt" render={({ field }) => (
-                              <FormItem><FormLabel>Expiration Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
+                            <FormField
+                              control={form.control} 
+                              name="couponCode" 
+                              render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Coupon Code</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="REACT2024" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )} 
+                            />
+                            <FormField
+                              control={form.control} 
+                              name="expiresAt" 
+                              render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Expiration Date</FormLabel>
+                                <FormControl>
+                                  <Input type="date" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )} 
+                            />
                           </div>
                         </div>
                       </TabsContent>
                       
-                      {/* Category Tab */}
                       <TabsContent value="category" className="space-y-4 mt-4">
                         <div className="space-y-4">
                           <div className="flex items-center gap-2 text-lg font-semibold"><FolderOpen className="h-5 w-5 text-primary" /> Category</div>
@@ -495,36 +512,91 @@ const AddEditCoursePage = () => {
                           )} />
                         </div>
                       </TabsContent>
+
+                      {/* BATCH IMPORT TAB CONTENT */}
+                      <TabsContent value="batch-import" className="space-y-4 mt-4">
+                        <div className="flex items-center gap-2 text-lg font-semibold">
+                          <Layers className="h-5 w-5 text-primary" />
+                          Batch Import
+                        </div>
+                        <Separator />
+                        
+                        {/* Render the standalone component */}
+                        <BatchCourseImport onSuccess={() => {
+                          toast.success("Batch import completed!");
+                          setTimeout(() => navigate('/admin/courses'), 1500);
+                        }} />
+                      </TabsContent>
                     </Tabs>
                     
-                    <div className="flex justify-between">
-                      <Button type="button" variant="outline" onClick={prevTab} disabled={activeTab === 'basic-info'}><ArrowLeft className="h-4 w-4 mr-2" />Previous</Button>
-                      {activeTab === 'category' ? (
-                        <Button type="submit" disabled={submitMutation.isPending}>{submitMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Add Course'}</Button>
-                      ) : (
-                        <Button type="button" onClick={nextTab}>Next<ArrowRight className="h-4 w-4 ml-2" /></Button>
-                      )}
-                    </div>
+                    {activeTab !== 'batch-import' && (
+                      <div className="flex justify-between pt-4 border-t">
+                        <Button type="button" variant="outline" onClick={prevTab} disabled={activeTab === 'basic-info'}>
+                          <ArrowLeft className="h-4 w-4 mr-2" /> Previous
+                        </Button>
+                        {activeTab === 'category' ? (
+                          <Button type="submit" disabled={submitMutation.isPending}>
+                            {submitMutation.isPending ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
+                            ) : (
+                              'Save Course'
+                            )}
+                          </Button>
+                        ) : (
+                          <Button type="button" onClick={nextTab}>
+                            Next <ArrowRight className="h-4 w-4 ml-2" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </form>
                 </Form>
               </CardContent>
             </Card>
           </div>
 
-          {/* Preview Sidebar */}
+          {/* RIGHT COLUMN */}
           <div className="lg:col-span-1">
             <Card className="sticky top-6">
-              <CardContent className="pt-6 space-y-4">
-                <div><h3 className="font-semibold mb-2">Preview</h3><p className="text-sm text-muted-foreground">How your course will appear</p></div>
+              <CardHeader>
+                <CardTitle>Preview</CardTitle>
+                <CardDescription>How the single course will appear to users.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <Separator />
-                {form.watch('image') && <img src={form.watch('image')} alt="preview" className="w-full rounded-lg border" onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/480x270?text=Invalid+URL';}} />}
-                <div><h4 className="font-semibold line-clamp-2">{form.watch('title') || 'Course Title'}</h4><p className="text-sm text-muted-foreground mt-1">{form.watch('instructor') || 'Instructor'}</p></div>
+                {form.watch('image') && (
+                  <img 
+                    src={form.watch('image')} 
+                    alt="preview" 
+                    className="w-full rounded-lg border aspect-video object-cover" 
+                    onError={(e) => {(e.target as HTMLImageElement).src = 'https://placehold.co/480x270?text=Invalid+URL';}}
+                  />
+                )}
+                <div>
+                  <h4 className="font-semibold line-clamp-2 text-lg">
+                    {form.watch('title') || 'Course Title'}
+                  </h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {form.watch('instructor') || 'Instructor Name'}
+                  </p>
+                </div>
                 {(originalPrice > 0 || discountedPrice > 0) && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold text-primary">${form.watch('discountedPrice') || '0.00'}</span>
-                    {originalPrice > 0 && <span className="text-sm text-muted-foreground line-through">${form.watch('originalPrice')}</span>}
+                  <div className="flex items-center gap-2 pt-2">
+                    <span className="text-2xl font-bold text-primary">
+                      ${(form.watch('discountedPrice') || 0).toFixed(2)}
+                    </span>
+                    {originalPrice > 0 && (
+                      <span className="text-sm text-muted-foreground line-through">
+                        ${(form.watch('originalPrice') || 0).toFixed(2)}
+                      </span>
+                    )}
                   </div>
                 )}
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {softwarePreview.map((tech, i) => (
+                    <Badge key={i} variant="outline" className="text-xs">{tech}</Badge>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>

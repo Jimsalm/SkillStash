@@ -1,13 +1,18 @@
 import { useState } from 'react';
-import { Loader2, Plus, Upload, AlertCircle, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Upload, Trash2, Layers, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useBatchScrapeCourses, useBatchCreateCourses } from '@/hooks/useCourses';
 import type { Course } from '@/api/courseApi';
+
+interface BatchCourseImportProps {
+  onSuccess?: () => void;
+}
 
 interface ScrapedCoursePreview extends Partial<Course> {
   id: string;
@@ -19,7 +24,7 @@ const cleanPrice = (priceStr: string | undefined | null): number => {
   return parseFloat(priceStr.replace(/[^0-9.]/g, '')) || 0;
 };
 
-export default function BatchCourseImport() {
+export default function BatchCourseImport({ onSuccess }: BatchCourseImportProps) {
   const [urls, setUrls] = useState<string>('');
   const [scrapedCourses, setScrapedCourses] = useState<ScrapedCoursePreview[]>([] as ScrapedCoursePreview[]);
   const [showResults, setShowResults] = useState<boolean>(false);
@@ -92,7 +97,6 @@ export default function BatchCourseImport() {
       return;
     }
     
-    // Convert courses for API - remove temporary id and ensure software is array
     const coursesToCreate = scrapedCourses.map(({ id, ...course }) => ({
       ...course,
       software: Array.isArray(course.software) 
@@ -107,6 +111,9 @@ export default function BatchCourseImport() {
       setScrapedCourses([]);
       setUrls('');
       setShowResults(false);
+      
+      if (onSuccess) onSuccess();
+      
     } catch (error) {
       console.error('Batch import error:', error);
     }
@@ -115,155 +122,130 @@ export default function BatchCourseImport() {
   const isProcessing = batchScrapeMutation.isPending || batchCreateMutation.isPending;
 
   return (
-    <div className="space-y-4">
-      <Card>
+    <div className="space-y-6">
+      <Card className="bg-muted/50 border-dashed">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Batch Import Courses
+          <CardTitle className="text-base flex items-center gap-2">
+            <Layers className="h-4 w-4 text-primary" />
+            1. Paste DiscUdemy URLs
           </CardTitle>
+          <CardDescription>
+            Enter up to 20 URLs (one per line) to scrape and create courses automatically.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              DiscUdemy URLs (one per line)
-            </label>
-            <Textarea
-              value={urls}
-              onChange={(e) => setUrls(e.target.value)}
-              placeholder="https://www.discudemy.com/course/...&#10;https://www.discudemy.com/course/...&#10;https://www.discudemy.com/course/..."
-              rows={8}
-              className="font-mono text-sm"
-              disabled={isProcessing}
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Maximum 20 URLs per batch
-            </p>
-          </div>
-
-          <Button
-            onClick={handleBatchScrape}
-            disabled={isProcessing || !urls.trim()}
-            className="w-full"
-          >
-            {batchScrapeMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Scraping {urls.split('\n').filter(u => u.trim()).length} courses...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                Scrape All Courses
-              </>
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {showResults && scrapedCourses.length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Scraped Courses ({scrapedCourses.length})</CardTitle>
-            <Button 
-              onClick={handleImportAll} 
-              size="sm"
-              disabled={batchCreateMutation.isPending}
+          <Textarea
+            value={urls}
+            onChange={(e) => setUrls(e.target.value)}
+            placeholder="https://www.discudemy.com/course/python-masterclass&#10;https://www.discudemy.com/course/web-dev-bootcamp"
+            rows={6}
+            className="font-mono text-sm"
+            disabled={isProcessing}
+          />
+          <div className="flex justify-end">
+            <Button
+              onClick={handleBatchScrape}
+              disabled={isProcessing || !urls.trim()}
             >
-              {batchCreateMutation.isPending ? (
+              {batchScrapeMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Importing...
+                  Scraping...
                 </>
               ) : (
                 <>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Import All
+                  <Upload className="mr-2 h-4 w-4" />
+                  Start Scraping
                 </>
               )}
             </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          </div>
+        </CardContent>
+      </Card>
+
+      {showResults && (
+        <>
+          <Separator />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">
+                2. Review Scraped Results ({scrapedCourses.length})
+              </h3>
+              <Button 
+                onClick={handleImportAll} 
+                disabled={batchCreateMutation.isPending || scrapedCourses.length === 0}
+                size="sm"
+              >
+                {batchCreateMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Import All to Database
+                  </>
+                )}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {scrapedCourses.map((course) => (
-                <Card key={course.id} className="relative">
-                  <CardContent className="pt-4">
+                <Card key={course.id} className="flex flex-col relative group overflow-hidden">
+                  <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
-                      variant="ghost"
+                      variant="destructive"
                       size="icon"
-                      className="absolute top-2 right-2 h-8 w-8"
+                      className="h-8 w-8 shadow-md"
                       onClick={() => removeCourse(course.id)}
                       disabled={batchCreateMutation.isPending}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-
-                    <div className="flex gap-4">
-                      {course.image && (
-                        <img
-                          src={course.image}
-                          alt={course.title || 'Course'}
-                          className="w-32 h-18 object-cover rounded border flex-shrink-0"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = 'https://placehold.co/160x90?text=No+Image';
-                          }}
-                        />
-                      )}
-                      
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm line-clamp-2 mb-1">
-                          {course.title}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          by {course.instructor}
-                        </p>
-                        
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {course.category && (
-                            <Badge variant="secondary" className="text-xs">
-                              {course.category}
-                            </Badge>
-                          )}
-                          {course.subcategory && (
-                            <Badge variant="outline" className="text-xs">
-                              {course.subcategory}
-                            </Badge>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-3 text-sm">
-                          <span className="font-bold text-primary">
-                            ${(course.discountedPrice || 0).toFixed(2)}
-                          </span>
-                          {(course.originalPrice || 0) > 0 && (
-                            <span className="text-muted-foreground line-through text-xs">
-                              ${course.originalPrice!.toFixed(2)}
-                            </span>
-                          )}
-                          {(course.originalPrice || 0) > 0 && (course.discountedPrice || 0) > 0 && (
-                            <Badge variant="default" className="text-xs">
-                              {Math.round(((course.originalPrice! - course.discountedPrice!) / course.originalPrice!) * 100)}% OFF
-                            </Badge>
-                          )}
-                        </div>
+                  </div>
+                  
+                  <div className="flex gap-3 p-4">
+                    <img
+                      src={course.image}
+                      alt={course.title}
+                      className="w-24 h-16 object-cover rounded border flex-shrink-0 bg-muted"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = 'https://placehold.co/160x90?text=No+Image';
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm line-clamp-2 mb-1">
+                        {course.title}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {course.instructor}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-[10px] h-5 px-1">
+                          {course.category}
+                        </Badge>
+                        <span className="text-xs font-bold text-primary">
+                          ${(course.discountedPrice || 0).toFixed(2)}
+                        </span>
                       </div>
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {showResults && scrapedCourses.length === 0 && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            No courses were successfully scraped. Please check your URLs and try again.
-          </AlertDescription>
-        </Alert>
+            {scrapedCourses.length === 0 && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No courses were successfully scraped. Please check your URLs.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
