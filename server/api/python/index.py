@@ -5,19 +5,18 @@ from bs4 import BeautifulSoup
 from openai import OpenAI
 import os 
 from dotenv import load_dotenv 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    # In Vercel logs, this helps debug missing keys
     print("WARNING: OPENAI_API_KEY not found in environment!")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 app = Flask(__name__)
-# Allow CORS. Since this is a data scraper, strict credential handling isn't usually required,
-# but we enable it broadly.
+
 CORS(app, resources={r"/api/*": {"origins": ["https://skillstash.vercel.app", "http://localhost:5173"]}}, supports_credentials=True)
 
 SYSTEM_PROMPT = """
@@ -79,10 +78,10 @@ def scrape_discudemy_course(url):
     }
 
     try:
-        response = requests.get(url, headers=headers, timeout=10) # Added timeout
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
     except Exception as e:
-        print(f"Error fetching URL: {e}")
+        print(f"Error fetching URL {url}: {e}")
         return None
 
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -108,7 +107,7 @@ def scrape_discudemy_course(url):
         intermediate_path = udemy_link_element['href']
         intermediate_url = f"https://www.couponami.com{intermediate_path}" if intermediate_path.startswith('/') else intermediate_path
         try:
-            go_response = requests.get(intermediate_url, headers=headers, timeout=10) # Added timeout
+            go_response = requests.get(intermediate_url, headers=headers, timeout=10)
             soup_go = BeautifulSoup(go_response.text, 'html.parser')
             final_url_element = soup_go.select_one('div .segment a')
             if final_url_element and 'href' in final_url_element.attrs:
@@ -132,6 +131,23 @@ def scrape_discudemy_course(url):
         'subcategory': ai_data.get('subcategory')
     }
 
+def scrape_single_url_safe(url):
+    """Wrapper to safely scrape a single URL and return url + result"""
+    try:
+        data = scrape_discudemy_course(url)
+        return {
+            'url': url,
+            'success': True,
+            'data': data
+        }
+    except Exception as e:
+        print(f"Error scraping {url}: {e}")
+        return {
+            'url': url,
+            'success': False,
+            'error': str(e)
+        }
+
 @app.route('/api/scrape', methods=['GET'])
 def scrape():
     url = request.args.get('url')
@@ -143,6 +159,37 @@ def scrape():
         return jsonify(data)
     else:
         return jsonify({'error': 'Scraping failed'}), 500
+
+@app.route('/api/scrape-batch', methods=['POST'])
+def scrape_batch():
+    """Scrape multiple URLs in parallel"""
+    body = request.get_json()
+    urls = body.get('urls', [])
+    
+    if not urls or not isinstance(urls, list):
+        return jsonify({'error': 'Invalid or missing URLs array'}), 400
+    
+    if len(urls) > 20:
+        return jsonify({'error': 'Maximum 20 URLs per batch'}), 400
+    
+    results = []
+    
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_url = {executor.submit(scrape_single_url_safe, url): url for url in urls}
+        
+        for future in as_completed(future_to_url):
+            result = future.result()
+            results.append(result)
+    
+    successful = [r for r in results if r['success']]
+    failed = [r for r in results if not r['success']]
+    
+    return jsonify({
+        'total': len(urls),
+        'successful': len(successful),
+        'failed': len(failed),
+        'results': results
+    })
 
 if __name__ == "__main__":
     print("Starting Python Scraper Server on port 5000...")

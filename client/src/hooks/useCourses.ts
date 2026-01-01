@@ -8,11 +8,13 @@ import {
   updateCourse,
   archiveCourse,
   deleteCourse,
+  scrapeCourseMetadata,
+  incrementClaimedCount,
+  batchScrapeCourses,
   type Course,
   type CourseFilters,
-  incrementClaimedCount,
   type ScrapedCourse,
-  scrapeCourseMetadata
+  type BatchScrapeResponse,
 } from '@/api/courseApi';
 import type { CourseFormValues } from '@/lib/schemas/courseFormSchema';
 import { useAuth } from '@/components/admin/AuthContext';
@@ -197,6 +199,43 @@ export const useScrapeCourse = () => {
     mutationFn: (url: string) => scrapeCourseMetadata(url),
     onError: (error) => {
       console.error("Scraper failed:", error);
+    },
+  });
+};
+
+export const useBatchScrapeCourses = () => {
+  return useMutation<BatchScrapeResponse, Error, string[]>({
+    mutationFn: (urls: string[]) => batchScrapeCourses(urls),
+    onError: (error) => {
+      console.error("Batch scraper failed:", error);
+    },
+  });
+};
+
+export const useBatchCreateCourses = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (courses: Partial<Course>[]) => {
+      const result = await Promise.allSettled(courses.map((course) => createCourse(course)));
+      
+      const successful = result.filter((r) => r.status === 'fulfilled').length;
+      const failed = result.filter((r) => r.status === 'rejected').length;
+      
+      return { successful, failed, total: courses.length };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
+      
+      if (result.failed > 0) {
+        toast.warning(`Imported ${result.successful}/${result.total} courses. ${result.failed} failed.`);
+      } else {
+        toast.success(`Successfully imported ${result.successful} courses!`)
+      }
+    },
+    onError: (error) => {
+      toast.error('Failed to create courses');
+      console.error('Failed to create courses:', error);
     },
   });
 };

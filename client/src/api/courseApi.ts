@@ -42,6 +42,20 @@ export interface ScrapedCourse {
   subcategory: string;
 }
 
+export interface BatchScrapeResult {
+  url: string;
+  success: boolean;
+  data?: ScrapedCourse;
+  error?: string;
+}
+
+export interface BatchScrapeResponse {
+  total: number;
+  successful: number;
+  failed: number;
+  results: BatchScrapeResult[];
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -144,5 +158,10 @@ export const scrapeCourseMetadata = async (url: string): Promise<ScrapedCourse> 
   const response = await api.get<ScrapedCourse>('/scrape', { 
     params: { url } 
   });
+  return response.data;
+};
+
+export const batchScrapeCourses = async (urls: string[]): Promise<BatchScrapeResponse> => {
+  const response = await api.post<BatchScrapeResponse>('/scrape-batch', { urls });
   return response.data;
 };

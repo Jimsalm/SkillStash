@@ -36,6 +36,19 @@ app.get("/api/scrape", async (req, res) => {
   }
 });
 
+app.post("/api/scrape-batch", async (req, res) => {
+  try {
+    const response = await axios.post("http://localhost:5000/api/scrape-batch", req.body);
+    res.json(response.data);
+  } catch (error: any) {
+    console.error("Python Batch Proxy Error:", error.message);
+    res.status(500).json({ 
+      error: "Could not connect to Python scraper for batch process.",
+      details: error.message 
+    });
+  }
+});
+
 const router = express.Router();
 
 router.get("/", (req, res) => {
