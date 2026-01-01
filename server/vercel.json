@@ -5,6 +5,10 @@
       "source": "/api/scrape", 
       "destination": "/api/python/index.py" 
     },
+    { 
+      "source": "/api/scrape-batch", 
+      "destination": "/api/python/index.py" 
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/index.ts"
